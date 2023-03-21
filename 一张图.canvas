@@ -1,9 +1,0 @@
-{
-	"nodes":[
-		{"id":"84a089a221f8ed15","x":-180,"y":-160,"width":250,"height":60,"type":"text","text":"sdjfl "},
-		{"id":"496f31e81180fa51","x":-200,"y":-40,"width":400,"height":400,"type":"file","file":"哈哈hh.md"}
-	],
-	"edges":[
-		{"id":"f77d5cc77334d1e2","fromNode":"84a089a221f8ed15","fromSide":"bottom","toNode":"496f31e81180fa51","toSide":"top"}
-	]
-}
