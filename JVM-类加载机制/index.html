@@ -1,0 +1,223 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="概述 JVM 把描述类的数据从 Class 文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被 JVM 直接使用的 Java 类型，这个过程被称作 JVM 的类加载机制。
+与那些在编译时需要进行连接的语言不同，在 Java 语言里面，类型的加载、连接和初始化过程都是在程序运行期间完成的，这种策略让 Java 语言进行提前编译会面临额外的困难，也会让类加载时稍微增加一些性能开销，但是却为 Java 应用提供了极高的扩展性和灵活性，Java 天生可以动态扩展的语言特性就是依赖运行期动态加载和动态连接这个特点实现的。
+类加载的时机 一个类型从被加载到虚拟机内存中开始到卸载位置，整个生命周期会经历如下七个阶段，其中验证、准备、解析三个部分统称为连接。 上图中，加载、验证、准备、初始化和卸载这五个阶段的顺序是确定的，类型的加载过程必须按照这种顺序按部就班地开始，而解析阶段则不一定：它在某些情况下可以在初始化阶段后再开始，这是为了支持 Java 语言的运行时半丁特性（也被称为动态绑定或者晚期绑定）。"><meta property="og:title" content="JVM 类加载机制"><meta property="og:description" content="概述 JVM 把描述类的数据从 Class 文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被 JVM 直接使用的 Java 类型，这个过程被称作 JVM 的类加载机制。
+与那些在编译时需要进行连接的语言不同，在 Java 语言里面，类型的加载、连接和初始化过程都是在程序运行期间完成的，这种策略让 Java 语言进行提前编译会面临额外的困难，也会让类加载时稍微增加一些性能开销，但是却为 Java 应用提供了极高的扩展性和灵活性，Java 天生可以动态扩展的语言特性就是依赖运行期动态加载和动态连接这个特点实现的。
+类加载的时机 一个类型从被加载到虚拟机内存中开始到卸载位置，整个生命周期会经历如下七个阶段，其中验证、准备、解析三个部分统称为连接。 上图中，加载、验证、准备、初始化和卸载这五个阶段的顺序是确定的，类型的加载过程必须按照这种顺序按部就班地开始，而解析阶段则不一定：它在某些情况下可以在初始化阶段后再开始，这是为了支持 Java 语言的运行时半丁特性（也被称为动态绑定或者晚期绑定）。"><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/JVM-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content="JVM 类加载机制"><meta name=twitter:description content="概述 JVM 把描述类的数据从 Class 文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被 JVM 直接使用的 Java 类型，这个过程被称作 JVM 的类加载机制。
+与那些在编译时需要进行连接的语言不同，在 Java 语言里面，类型的加载、连接和初始化过程都是在程序运行期间完成的，这种策略让 Java 语言进行提前编译会面临额外的困难，也会让类加载时稍微增加一些性能开销，但是却为 Java 应用提供了极高的扩展性和灵活性，Java 天生可以动态扩展的语言特性就是依赖运行期动态加载和动态连接这个特点实现的。
+类加载的时机 一个类型从被加载到虚拟机内存中开始到卸载位置，整个生命周期会经历如下七个阶段，其中验证、准备、解析三个部分统称为连接。 上图中，加载、验证、准备、初始化和卸载这五个阶段的顺序是确定的，类型的加载过程必须按照这种顺序按部就班地开始，而解析阶段则不一定：它在某些情况下可以在初始化阶段后再开始，这是为了支持 Java 语言的运行时半丁特性（也被称为动态绑定或者晚期绑定）。"><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>JVM 类加载机制</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.9b494647041df398d4e33541c110ab07.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>JVM 类加载机制</h1><p class=meta>Last updated
+Mar 22, 2023</p><ul class=tags><li><a href=https://www.guanpj.top/tags/JVM/>Jvm</a></li><li><a href=https://www.guanpj.top/tags/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/>类加载机制</a></li><li><a href=https://www.guanpj.top/tags/Java/>Java</a></li></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#概述>概述</a></li><li><a href=#类加载的时机>类加载的时机</a><ol><li><a href=#主动引用>主动引用</a></li><li><a href=#被动引用>被动引用</a></li></ol></li><li><a href=#类加载的过程>类加载的过程</a><ol><li><a href=#加载>加载</a></li><li><a href=#验证>验证</a><ol><li><a href=#文件格式验证>文件格式验证</a></li><li><a href=#元数据验证>元数据验证</a></li><li><a href=#字节码验证>字节码验证</a></li><li><a href=#符号引用验证>符号引用验证</a></li></ol></li><li><a href=#准备>准备</a></li><li><a href=#解析>解析</a></li><li><a href=#初始化>初始化</a></li></ol></li><li><a href=#类加载器>类加载器</a><ol><li><a href=#类与类加载器>类与类加载器</a></li><li><a href=#类加载器的分类>类加载器的分类</a><ol><li><ol><li><ol><li><a href=#strong启动类加载器bootstrap-classloaderstrong><strong>启动类加载器（Bootstrap ClassLoader）</strong></a></li><li><a href=#strong扩展类加载器extension-classloaderstrong><strong>扩展类加载器（Extension ClassLoader）</strong></a></li><li><a href=#strong应用程序类加载器application-classloaderstrong><strong>应用程序类加载器（Application ClassLoader）</strong></a></li></ol></li></ol></li></ol></li><li><a href=#双亲委派模型>双亲委派模型</a><ol><li><a href=#工作过程>工作过程</a></li><li><a href=#优点>优点</a></li><li><a href=#实现过程>实现过程</a></li></ol></li></ol></li></ol></nav></details></aside><a href=#概述><h1 id=概述><span class=hanchor arialabel=Anchor># </span>概述</h1></a><p>JVM 把描述类的数据从 Class 文件加载到内存，并对数据进行校验、转换解析和初始化，最终形成可以被 JVM 直接使用的 Java 类型，这个过程被称作 JVM 的类加载机制。</p><p>与那些在编译时需要进行连接的语言不同，在 Java 语言里面，类型的加载、连接和初始化过程都是在程序运行期间完成的，这种策略让 Java 语言进行提前编译会面临额外的困难，也会让类加载时稍微增加一些性能开销，但是却为 Java 应用提供了极高的扩展性和灵活性，Java 天生可以动态扩展的语言特性就是依赖运行期动态加载和动态连接这个特点实现的。</p><a href=#类加载的时机><h1 id=类加载的时机><span class=hanchor arialabel=Anchor># </span>类加载的时机</h1></a><p>一个类型从被加载到虚拟机内存中开始到卸载位置，整个生命周期会经历如下七个阶段，其中验证、准备、解析三个部分统称为连接。
+<img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/ClassLoader/clipboard_20230323_120031.png width=auto alt>
+上图中，加载、验证、准备、初始化和卸载这五个阶段的顺序是确定的，类型的加载过程必须按照这种顺序按部就班地开始，而解析阶段则不一定：它在某些情况下可以在初始化阶段后再开始，这是为了支持 Java 语言的运行时半丁特性（也被称为动态绑定或者晚期绑定）。</p><a href=#主动引用><h2 id=主动引用><span class=hanchor arialabel=Anchor># </span>主动引用</h2></a><p>关于在什么情况下需要开始类加载过程的第一个阶段“加载”，《Java 虚拟机规范》中并没有进行强制约束，这点可以交给虚拟机的具体实现来自由把握。但是对于初始化阶段，《Java 虚拟机规范》则是严格规定了有且只有六种情况必须立即对类进行“初始化”（而加载、验证和准备阶段自然需要在此之前开始）：</p><ul><li><p>遇到 new、getstatic、putstatic、invokestatic 这四条字节码指令时，如果类没有进行过初始化，则必须先触发其初始化。最常见的生成这四条指令的场景是：</p><ul><li>使用 new 关键字实例化对象的时候。</li><li>读取或设置一个类的静态字段（被 final 修饰、已在编译期把结果放入常量池的静态字段除外）的时候。</li><li>调用一个类的静态方法的时候。</li></ul></li><li><p>使用 java.lang.reflect 包的方法对类进行反射调用的时候，如果类没有进行初始化，则需要先触发其初始化。</p></li><li><p>当初始化一个类的时候，如果发现其父类还没有进行过初始化，则需要先触发其父类的初始化。</p></li><li><p>当虚拟机启动时，用户需要指定一个要执行的主类（包含 main() 方法的那个类），虚拟机会先初始化这个主类；</p></li><li><p>当使用 JDK 1.7 的动态语言支持时，如果一个 java.lang.invoke.MethodHandle 实例最后的解析结果为 REF_getStatic, REF_putStatic, REF_invokeStatic 的方法句柄，并且这个方法句柄所对应的类没有进行过初始化，则需要先触发其初始化。</p></li><li><p>当一个接口中定义了 JDK 8 新加入的默认方法（被 default 关键字修饰的接口方法）时，如果这个接口的实现类发生了初始化，那该接口要在其之前被初始化。</p></li></ul><a href=#被动引用><h2 id=被动引用><span class=hanchor arialabel=Anchor># </span>被动引用</h2></a><p>以上六种场景中的行为称为对一个类型进行主动引用，除此之外所有引用类型的方式都不会触发初始化，被称为被动引用。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>SuperClass</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>static</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;SuperClass init!&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>int</span> <span class=n>value</span> <span class=o>=</span> <span class=n>123</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>SubClass</span> <span class=kd>extends</span> <span class=n>SuperClass</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>static</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;SubClass init!&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kd>final</span> <span class=n>String</span> <span class=n>CONS</span> <span class=o>=</span> <span class=s>&#34;hello&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>通过子类引用父类的静态字段，不会导致子类初始化</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>SubClass</span><span class=o>.</span><span class=na>value</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>SuperClass</span> <span class=n>init</span><span class=o>!</span>
+</span></span><span class=line><span class=cl><span class=n>123</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>通过数组定义来引用类，不会触发此类的初始化</li></ul><p>该过程会对数组类进行初始化，数组类是一个由虚拟机自动生成的、直接继承自 Object 的子类，其中包含了数组的属性和方法。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>SuperClass</span><span class=o>[]</span> <span class=n>sca</span> <span class=o>=</span> <span class=k>new</span> <span class=n>SuperClass</span><span class=o>[</span><span class=n>10</span><span class=o>];</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>没有任何输出</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>常量在编译阶段会存入调用类的常量池中，本质上并没有直接引用到定义常量的类，因此不会触发定义常量的类的初始化。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>SubClass</span><span class=o>.</span><span class=na>CONS</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>hello</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#类加载的过程><h1 id=类加载的过程><span class=hanchor arialabel=Anchor># </span>类加载的过程</h1></a><p>类加载的过程包含了加载、验证、准备、解析和初始化这 5 个阶段。</p><a href=#加载><h2 id=加载><span class=hanchor arialabel=Anchor># </span>加载</h2></a><p>这里的加载指的是类加载的一个阶段，注意不要混淆。</p><p>加载过程完成以下三件事：</p><ul><li>通过类的<strong>完全限定名称</strong>获取定义该类的二进制字节流。</li><li>将该字节流表示的静态存储结构转换为方法区的运行时存储结构。</li><li>在内存中生成一个代表该类的 Class 对象，作为方法区中该类各种数据的访问入口。</li></ul><p>其中二进制字节流可以从以下方式中获取：</p><ul><li>从 ZIP 包读取，成为 JAR、EAR、WAR 格式的基础。</li><li>从网络中获取，最典型的应用是 Applet。</li><li>运行时计算生成，例如动态代理技术，在 java.lang.reflect.Proxy 使用 ProxyGenerator.generateProxyClass 的代理类的二进制字节流。</li><li>由其他文件生成，例如由 JSP 文件生成对应的 Class 类。</li><li>从数据库中读取，这种场景相对比较少见。</li><li>从加密文件中获取，这是典型的防 Class 文件被反编译的保护措施，通过加载时解密 Class 文件来保障程序运行逻辑不被窥探。</li></ul><a href=#验证><h2 id=验证><span class=hanchor arialabel=Anchor># </span>验证</h2></a><p>验证流程确保 Class 文件的字节流中包含的信息符合当前虚拟机的要求，并且不会危害虚拟机自身的安全。验证阶段大致上会完成下面四个阶段的动作。</p><a href=#文件格式验证><h3 id=文件格式验证><span class=hanchor arialabel=Anchor># </span>文件格式验证</h3></a><p>主要验证字节流是否符合 Class 文件格式的规范，并且能被当前版本的虚拟机处理。</p><a href=#元数据验证><h3 id=元数据验证><span class=hanchor arialabel=Anchor># </span>元数据验证</h3></a><p>对字节码描述的信息进行语义分析，以保证其描述的信息符合《Java 语言规范》的要求。</p><a href=#字节码验证><h3 id=字节码验证><span class=hanchor arialabel=Anchor># </span>字节码验证</h3></a><p>通过数据流分析和控制流分析，确定程序语义是合法的、符合逻辑的。在第二阶段对元数据信息中的数据类型校验完毕以后，这个阶段就要对类的方法体（Class 文件中的 Code 属性）进行校验分析，保证被校验类的方法在运行时不会做出危害虚拟机安全的行为。这个阶段是整个验证过程中最复杂的一个阶段。</p><a href=#符号引用验证><h3 id=符号引用验证><span class=hanchor arialabel=Anchor># </span>符号引用验证</h3></a><p>这个阶段的校验行为发生在虚拟机将符号引用转化为直接引用的时候，这个转化动作将在连接的第三个阶段——解析阶段中发生。符号引用验证可以看作是对类自身以外（常量池中的各种符号引用）的各类信息进行匹配行校验，通俗来说就是，该类是否缺少或者被禁止访问它依赖的某些外部类、方法、字段等资源。</p><p>符号引用验证的主要目的是确保解析行为能正常执行，如果无法通过符号引用验证，JVM 将会抛出异常。</p><a href=#准备><h2 id=准备><span class=hanchor arialabel=Anchor># </span>准备</h2></a><p>准备阶段时正式为类中定义的变量（即被 static 修饰的静态变量）<strong>分配内存并设置类变量初始值</strong>的阶段。</p><p>实例变量不会在这阶段分配内存，它会在对象实例化时随着对象一起被分配在堆中。应该注意到，实例化不是类加载的一个过程，类加载发生在所有实例化操作之前，并且类加载只进行一次，实例化可以进行多次。</p><p>类变量初始值一般为 0 值，例如下面的类变量 value 被初始化为 0 而不是 123。</p><p>public static int value = 123;</p><p>把 value 赋值为 123 的 putstatic 指令要到类的初始化阶段中执行类构造器 <code>&lt;clinit>() </code>方法时才会被执行。</p><p>如果类变量是常量，那么它将初始化为表达式所定义的值而不是 0。例如下面的常量 value 被初始化为 123 而不是 0。</p><p>public static final int value = 123;</p><a href=#解析><h2 id=解析><span class=hanchor arialabel=Anchor># </span>解析</h2></a><p>解析阶段是 JVM 将常量池的符号引用替换为直接引用的过程。解析动作主要针对类或接口、字段、类方法、接口方法、方法类型、方法句柄和调用点限定符这 7 类符号引用进行。</p><p>解析过程在某些情况下可以在初始化阶段之后再开始，这是为了支持 Java 的动态绑定。</p><a href=#初始化><h2 id=初始化><span class=hanchor arialabel=Anchor># </span>初始化</h2></a><p>初始化阶段才真正开始执行类中定义的 Java 程序代码。初始化阶段是虚拟机执行类构造器 <code>&lt;clinit>()</code> 方法的过程。在准备阶段，类变量已经赋过一次系统要求的初始零值，而在初始化阶段，则会根据程序员通过程序制定的主观计划去初始化类变量和其它资源。</p><ul><li><code>&lt;clinit>()</code> 是由编译器自动收集类中所有类变量的赋值动作和静态语句块中的语句合并产生的，编译器收集的顺序由语句在源文件中出现的顺序决定。特别注意的是，静态语句块只能访问到定义在它之前的类变量，定义在它之后的类变量只能赋值，不能访问。例如以下代码：</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>static</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>i</span> <span class=o>=</span> <span class=n>0</span><span class=o>;</span>                <span class=c1>// 给变量赋值可以正常编译通过
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>print</span><span class=o>(</span><span class=n>i</span><span class=o>);</span>  <span class=c1>// 这句编译器会提示“非法向前引用”
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=kd>static</span> <span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=n>1</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>由于父类的 <code>&lt;clinit>()</code> 方法先执行，也就意味着父类中定义的静态语句块的执行要优先于子类。例如以下代码：</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>static</span> <span class=kd>class</span> <span class=nc>Parent</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>int</span> <span class=n>A</span> <span class=o>=</span> <span class=n>1</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=kd>static</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>A</span> <span class=o>=</span> <span class=n>2</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>static</span> <span class=kd>class</span> <span class=nc>Sub</span> <span class=kd>extends</span> <span class=n>Parent</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>int</span> <span class=n>B</span> <span class=o>=</span> <span class=n>A</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>     <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Sub</span><span class=o>.</span><span class=na>B</span><span class=o>);</span>  <span class=c1>// B 的值为 2
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li><code>&lt;clinit>() </code>方法对于类或接口来说不是必需的。</li><li>接口中不可以使用静态语句块，但仍然有类变量初始化的赋值操作，因此接口与类一样都会生成 <code>&lt;clinit>()</code> 方法。但接口与类不同的是，执行接口的 <code>&lt;clinit>()</code> 方法不需要先执行父接口的 <code>&lt;clinit>()</code> 方法。只有当父接口中定义的变量使用时，父接口才会初始化。另外，接口的实现类在初始化时也一样不会执行接口的 <code>&lt;clinit>()</code> 方法。</li><li>虚拟机会保证一个类的 <code>&lt;clinit>()</code> 方法在多线程环境下被正确的加锁和同步，如果多个线程同时初始化一个类，只会有一个线程执行这个类的 <code>&lt;clinit>()</code> 方法，其它线程都会阻塞等待，直到活动线程执行 <code>&lt;clinit>()</code> 方法完毕。如果在一个类的 <code>&lt;clinit>()</code> 方法中有耗时的操作，就可能造成多个线程阻塞，在实际过程中此种阻塞往往是很隐蔽的。</li></ul><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/ClassLoader/clipboard_20230323_120337.png width=auto alt></p><a href=#类加载器><h1 id=类加载器><span class=hanchor arialabel=Anchor># </span>类加载器</h1></a><p>Java 虚拟机设计团队有意把了加载阶段中的“通过一个类的全限定名称来获取描述该类的二进制字节流”这个动作放到 Java 虚拟机外部去实现，以便让应用程序自己决定如何去获取所需的类。实现这个动作的代码被称为“类加载器（Class Loader）”。</p><a href=#类与类加载器><h2 id=类与类加载器><span class=hanchor arialabel=Anchor># </span>类与类加载器</h2></a><p>对于任意一个类，都必须由加载它的类加载器和这个类本身一起共同确立其在 Java 虚拟机中的唯一性，每一个类加载器都拥有一个独立的类名称空间。</p><p>换句话说，虚拟句认定两个类是否相等，除了需要比较类本身相等之外，并且还要判断它们是否使用同一个类加载器进行加载，因为每一个类加载器都拥有一个独立的类名称空间。</p><p>这里的相等，包括类的 Class 对象的 equals() 方法、isAssignableFrom() 方法、isInstance() 方法的返回结果为 true，也包括使用 instanceof 关键字做对象所属关系判定结果为 true。</p><a href=#类加载器的分类><h2 id=类加载器的分类><span class=hanchor arialabel=Anchor># </span>类加载器的分类</h2></a><p>从 Java 虚拟机的角度来讲，只存在以下两种不同的类加载器：</p><ul><li>启动类加载器（Bootstrap ClassLoader），使用 C++ 实现，是虚拟机自身的一部分；</li><li>所有其它类的加载器，使用 Java 实现，独立于虚拟机，继承自抽象类 java.lang.ClassLoader。</li></ul><p>从 Java 开发人员的角度看，类加载器可以划分得更细致一些：</p><a href=#strong启动类加载器bootstrap-classloaderstrong><h5 id=strong启动类加载器bootstrap-classloaderstrong><span class=hanchor arialabel=Anchor># </span><strong>启动类加载器（Bootstrap ClassLoader）</strong></h5></a><p>此类加载器负责将存放在 &lt;JRE_HOME>\lib 目录中的，或者被 -Xbootclasspath 参数所指定的路径中的，并且是虚拟机识别的（<strong>仅按照文件名识别</strong>，如 rt.jar，名字不符合的类库即使放在 lib 目录中也不会被加载）类库加载到虚拟机内存中。启动类加载器无法被 Java 程序直接引用，用户在编写自定义类加载器时，如果需要把加载请求委派给启动类加载器，直接使用 null 代替即可。</p><a href=#strong扩展类加载器extension-classloaderstrong><h5 id=strong扩展类加载器extension-classloaderstrong><span class=hanchor arialabel=Anchor># </span><strong>扩展类加载器（Extension ClassLoader）</strong></h5></a><p>这个类加载器是由 ExtClassLoader（sun.misc.Launcher$ExtClassLoader）实现的。它负责将 &lt;JAVA_HOME>/lib/ext 或者被 java.ext.dir 系统变量所指定路径中的所有类库加载到内存中，开发者可以直接使用扩展类加载器。</p><a href=#strong应用程序类加载器application-classloaderstrong><h5 id=strong应用程序类加载器application-classloaderstrong><span class=hanchor arialabel=Anchor># </span><strong>应用程序类加载器（Application ClassLoader）</strong></h5></a><p>这个类加载器是由 AppClassLoader（sun.misc.Launcher$AppClassLoader）实现的。由于这个类加载器是 ClassLoader 中的 getSystemClassLoader() 方法的返回值，因此一般称为<strong>系统类加载器</strong>。它负责加载用户类路径（ClassPath）上所指定的类库，开发者可以直接使用这个类加载器，如果应用程序中没有自定义过自己的类加载器，一般情况下这个就是程序中默认的类加载器。</p><a href=#双亲委派模型><h2 id=双亲委派模型><span class=hanchor arialabel=Anchor># </span>双亲委派模型</h2></a><p>应用程序是由三种类加载器互相配合从而实现类加载，除此之外还可以加入自己定义的类加载器。</p><p>下图展示了类加载器之间的层次关系，称为双亲委派模型（Parents Delegation Model）。该模型要求除了顶层的启动类加载器外，其它的类加载器都要有自己的父类加载器。这里的父子关系一般通过组合关系（Composition）来实现，而不是继承关系（Inheritance）。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/ClassLoader/clipboard_20230323_120403.png width=auto alt></p><a href=#工作过程><h3 id=工作过程><span class=hanchor arialabel=Anchor># </span>工作过程</h3></a><p>一个类加载器收到加载请求，首先将类加载请求转发到<strong>父类加载器</strong>，每一个层次的类加载器都是如此，因此所有的加载请求最终都应该传送到最顶层的启动类加载器中，只有当父类加载器无法完成时，子加载器才尝试自己去加载。</p><a href=#优点><h3 id=优点><span class=hanchor arialabel=Anchor># </span>优点</h3></a><ol><li>避免重复加载。</li><li>防止 Java 核心 api 被篡改</li></ol><a href=#实现过程><h3 id=实现过程><span class=hanchor arialabel=Anchor># </span>实现过程</h3></a><p>以下是抽象类 java.lang.ClassLoader 的代码片段，其中的 loadClass() 方法运行过程如下：先检查类是否已经加载过，如果没有则让父类加载器去加载。当父类加载器加载失败时抛出 ClassNotFoundException，此时尝试自己去加载。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>abstract</span> <span class=kd>class</span> <span class=nc>ClassLoader</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// The parent class loader for delegation
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>private</span> <span class=kd>final</span> <span class=n>ClassLoader</span> <span class=n>parent</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>loadClass</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>ClassNotFoundException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>loadClass</span><span class=o>(</span><span class=n>name</span><span class=o>,</span> <span class=kc>false</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>protected</span> <span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>loadClass</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>,</span> <span class=kt>boolean</span> <span class=n>resolve</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>ClassNotFoundException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=kd>synchronized</span> <span class=o>(</span><span class=n>getClassLoadingLock</span><span class=o>(</span><span class=n>name</span><span class=o>))</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// First, check if the class has already been loaded
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>c</span> <span class=o>=</span> <span class=n>findLoadedClass</span><span class=o>(</span><span class=n>name</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>c</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=k>if</span> <span class=o>(</span><span class=n>parent</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                        <span class=n>c</span> <span class=o>=</span> <span class=n>parent</span><span class=o>.</span><span class=na>loadClass</span><span class=o>(</span><span class=n>name</span><span class=o>,</span> <span class=kc>false</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>                    <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                        <span class=n>c</span> <span class=o>=</span> <span class=n>findBootstrapClassOrNull</span><span class=o>(</span><span class=n>name</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>                    <span class=o>}</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>ClassNotFoundException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=c1>// ClassNotFoundException thrown if class not found
+</span></span></span><span class=line><span class=cl><span class=c1></span>                    <span class=c1>// from the non-null parent class loader
+</span></span></span><span class=line><span class=cl><span class=c1></span>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>                <span class=k>if</span> <span class=o>(</span><span class=n>c</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=c1>// If still not found, then invoke findClass in order
+</span></span></span><span class=line><span class=cl><span class=c1></span>                    <span class=c1>// to find the class.
+</span></span></span><span class=line><span class=cl><span class=c1></span>                    <span class=n>c</span> <span class=o>=</span> <span class=n>findClass</span><span class=o>(</span><span class=n>name</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>resolve</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>resolveClass</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=n>c</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>protected</span> <span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>findClass</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>ClassNotFoundException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>throw</span> <span class=k>new</span> <span class=n>ClassNotFoundException</span><span class=o>(</span><span class=n>name</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>

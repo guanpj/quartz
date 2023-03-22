@@ -1,0 +1,715 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="概述 提到字节码，首先想到的就是 Java，Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对各种操作系统、平台都进行了定制，二是因为无论在什么平台，都可以编译生成固定格式的字节码（.class 文件）供 JVM 使用。
+​其实不止是 Java，其他很多编程语言如 Scala、Kotlin 和 Groovy 等都是运行在 JVM 的语言，因此它们对应的编译器也能够生成 .class 字节码。
+源代码中的各种变量，关键字和运算符号的语义最终都会编译成多条字节码命令。而字节码命令所能提供的语义描述能力是要明显强于 Java 本身的，所以有其他一些同样基于 JVM 的语言能提供许多 Java 所不支持的语言特性。"><meta property="og:title" content="JVM 字节码结构分析"><meta property="og:description" content="概述 提到字节码，首先想到的就是 Java，Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对各种操作系统、平台都进行了定制，二是因为无论在什么平台，都可以编译生成固定格式的字节码（.class 文件）供 JVM 使用。
+​其实不止是 Java，其他很多编程语言如 Scala、Kotlin 和 Groovy 等都是运行在 JVM 的语言，因此它们对应的编译器也能够生成 .class 字节码。
+源代码中的各种变量，关键字和运算符号的语义最终都会编译成多条字节码命令。而字节码命令所能提供的语义描述能力是要明显强于 Java 本身的，所以有其他一些同样基于 JVM 的语言能提供许多 Java 所不支持的语言特性。"><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/JVM-%E5%AD%97%E8%8A%82%E7%A0%81%E7%BB%93%E6%9E%84%E5%88%86%E6%9E%90/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content="JVM 字节码结构分析"><meta name=twitter:description content="概述 提到字节码，首先想到的就是 Java，Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对各种操作系统、平台都进行了定制，二是因为无论在什么平台，都可以编译生成固定格式的字节码（.class 文件）供 JVM 使用。
+​其实不止是 Java，其他很多编程语言如 Scala、Kotlin 和 Groovy 等都是运行在 JVM 的语言，因此它们对应的编译器也能够生成 .class 字节码。
+源代码中的各种变量，关键字和运算符号的语义最终都会编译成多条字节码命令。而字节码命令所能提供的语义描述能力是要明显强于 Java 本身的，所以有其他一些同样基于 JVM 的语言能提供许多 Java 所不支持的语言特性。"><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>JVM 字节码结构分析</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.9b494647041df398d4e33541c110ab07.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>JVM 字节码结构分析</h1><p class=meta>Last updated
+Mar 22, 2023</p><ul class=tags><li><a href=https://www.guanpj.top/tags/JVM/>Jvm</a></li><li><a href=https://www.guanpj.top/tags/%E5%AD%97%E8%8A%82%E7%A0%81/>字节码</a></li><li><a href=https://www.guanpj.top/tags/Java/>Java</a></li></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#概述>概述</a></li><li><a href=#字节码结构>字节码结构</a><ol><li><a href=#魔数magic-number>魔数（Magic Number）</a></li><li><a href=#版本号minor--major-version>版本号（Minor & Major Version）</a></li><li><a href=#常量池constant-pool>常量池（Constant Pool）</a><ol><li><a href=#常量池计数器constant_pool_count>常量池计数器（constant_pool_count）</a></li><li><a href=#常量池数据区constant_poolconstant_pool_count-1>常量池数据区（constant_pool[constant_pool_count-1]）</a><ol><li><a href=#constant_utf8_info>CONSTANT_Utf8_info</a></li><li><a href=#constant_integer_info-和-constant_float_info>CONSTANT_Integer_info 和 CONSTANT_Float_info</a></li><li><a href=#constant_long_info-和-constant_double_info>CONSTANT_Long_info 和 CONSTANT_Double_info</a></li><li><a href=#constant_class_info>CONSTANT_Class_info</a></li><li><a href=#constant_string_info>CONSTANT_String_info</a></li><li><a href=#constant_fieldref_infoconstant_methodref_info-和-constant_interfacemethodref_info>CONSTANT_Fieldref_info、CONSTANT_Methodref_info 和 CONSTANT_InterfaceMethodref_info</a></li><li><a href=#constant_nameandtype_info>CONSTANT_NameAndType_info</a></li><li><a href=#constant_methodtype_infoconstant_methodhandle_info-和-constant_invokedynamic_info>CONSTANT_MethodType_info、CONSTANT_MethodHandle_info 和 CONSTANT_InvokeDynamic_info</a></li></ol></li></ol></li><li><a href=#类访问标记access-flags>类访问标记(Access Flags)</a></li><li><a href=#类索引this-class超类索引super-class和接口表索引interfaces>类索引（This Class）、超类索引（Super Class）和接口表索引（Interfaces）</a></li><li><a href=#字段表fields>字段表（Fields）</a><ol><li><a href=#字段表概述>字段表概述</a></li><li><a href=#字段结构>字段结构</a></li><li><a href=#字段访问标记>字段访问标记</a></li><li><a href=#字段描述符>字段描述符</a></li><li><a href=#字段属性表>字段属性表</a></li><li><a href=#案例分析>案例分析</a></li></ol></li><li><a href=#方法表methods>方法表（Methods）</a><ol><li><a href=#方法表概述>方法表概述</a></li><li><a href=#方法结构>方法结构</a></li><li><a href=#方法访问标记>方法访问标记</a></li><li><a href=#方法名与描述符>方法名与描述符</a></li><li><a href=#方法属性表>方法属性表</a></li><li><a href=#案例分析-1>案例分析</a></li></ol></li><li><a href=#属性表attributes>属性表（Attributes）</a><ol><li><a href=#属性表概述>属性表概述</a></li><li><a href=#属性结构>属性结构</a></li><li><a href=#属性类型>属性类型</a></li><li><a href=#constantvalue-属性>ConstantValue 属性</a></li><li><a href=#code-属性>Code 属性</a></li><li><a href=#案例分析-2>案例分析</a></li></ol></li></ol></li></ol></nav></details></aside><a href=#概述><h1 id=概述><span class=hanchor arialabel=Anchor># </span>概述</h1></a><p>提到字节码，首先想到的就是 Java，Java 之所以可以“一次编译，到处运行”，一是因为 JVM 针对各种操作系统、平台都进行了定制，二是因为无论在什么平台，都可以编译生成固定格式的字节码（.class 文件）供 JVM 使用。</p><p>​其实不止是 Java，其他很多编程语言如 Scala、Kotlin 和 Groovy 等都是运行在 JVM 的语言，因此它们对应的编译器也能够生成 .class 字节码。</p><p>源代码中的各种变量，关键字和运算符号的语义最终都会编译成多条字节码命令。而字节码命令所能提供的语义描述能力是要明显强于 Java 本身的，所以有其他一些同样基于 JVM 的语言能提供许多 Java 所不支持的语言特性。</p><p><img src=https://www.guanpj.top//static/boxcnkcdgXBNKvNVzhrXq8VUnRK.png width=auto alt></p><p>在 Java 中一般是用 javac 命令编译源代码为字节码文件，一个 .java 文件从编译到运行的示例如下。</p><p><img src=https://www.guanpj.top//static/boxcnvjHB3lK8C1993rcvvhsAFg.png width=auto alt></p><p>JVM 的指令由一个字节长度的操作码（opcode）和紧随其后的可选的操作数（operand）构成。“字节码”这个名字的由来也是因为操作码的长度用一个字节表示。</p><p><code>&lt;opcode> [&lt;operand1>, &lt;operand2>]</code></p><p>比如将整型常量 100 压栈到栈顶的指令是 “bipush 100”，其中 bipush 就是操作码，100 就是操作数。</p><p>因为操作码长度只有 1 个字节长度，这使得编译后的字节码文件非常小巧紧凑，但同时也直接限制了整个 JVM 操作码指令集的数量最多只能有 256 个，目前已经使用了 200+。</p><p>大部分字节码指令都包含了所要操作的类型信息。比如 “ireturn” 用于返回一个 int 类型的数据，“dreturn” 用于返回一个 double 类型的的数据，“freturn” 指令用于返回一个 float 类型的数据，这种方式也使得字节码实际的指令类型远小于 200 个。</p><p>字节码使用大端序（Big-Endian）表示，即高位在前，低位在后的方式，比如字节码 “getfield 00 02”，表示的是 “getfiled 0x00&#171;8 | 0x02（getfield #2)”。</p><p>字节码并不是某种虚拟 CPU 的机器码，而是一种介于源码和机器码中间的一种抽象表示方法，不过字节码通过 JIT（Just in time）技术可以被进一步编译成机器码。</p><a href=#字节码结构><h1 id=字节码结构><span class=hanchor arialabel=Anchor># </span>字节码结构</h1></a><p>根据 Java 虚拟机规范，Class 文件通过 <strong>ClassFile</strong> 定义，有点类似 C 语言的结构体。</p><p>ClassFile 的结构如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>ClassFile {
+</span></span><span class=line><span class=cl>    u4             magic; //魔数
+</span></span><span class=line><span class=cl>    u2             minor_version;//小版本号
+</span></span><span class=line><span class=cl>    u2             major_version;//大版本号
+</span></span><span class=line><span class=cl>    u2             constant_pool_count;//常量数量
+</span></span><span class=line><span class=cl>    cp_info        constant_pool[constant_pool_count-1];//常量池
+</span></span><span class=line><span class=cl>    u2             access_flags;//类访问标记
+</span></span><span class=line><span class=cl>    u2             this_class;//当前类
+</span></span><span class=line><span class=cl>    u2             super_class;//父类
+</span></span><span class=line><span class=cl>    u2             interfaces_count;//接口数量
+</span></span><span class=line><span class=cl>    u2             interfaces[interfaces_count];//接口表
+</span></span><span class=line><span class=cl>    u2             fields_count;//字段数量
+</span></span><span class=line><span class=cl>    field_info     fields[fields_count];//字段表
+</span></span><span class=line><span class=cl>    u2             methods_count;//方法数量
+</span></span><span class=line><span class=cl>    method_info    methods[methods_count];//方法表
+</span></span><span class=line><span class=cl>    u2             attributes_count;//属性数量
+</span></span><span class=line><span class=cl>    attribute_info attributes[attributes_count];//属性表
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>可以看出，class 文件由下面十个部分组成：</p><ul><li>魔数（Magic Number）</li><li>版本号（Minor&Major Version）</li><li>常量池（Constant Pool）</li><li>类访问标记(Access Flags)</li><li>类索引（This Class）</li><li>超类索引（Super Class）</li><li>接口表索引（Interfaces）</li><li>字段表（Fields）</li><li>方法表（Methods）</li><li>属性表（Attributes）</li></ul><p>它们的按照以下顺序进行排放：</p><p><img src=https://www.guanpj.top//static/boxcnjjpJAE7qORzHAVoIdq9yve.png width=auto alt></p><p>《Optimizing Java》的作者编了一句顺口溜帮忙记住上面这十部分：&ldquo;My Very Cute Animal Turns Savage In Full Moon Areas.&rdquo;</p><p><img src=https://www.guanpj.top//static/boxcnuIbBA41MB7NR382pr0gYQ1.png width=auto alt></p><p>以下面这个类为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>ByteCodeDemo</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>   <span class=kd>private</span> <span class=kt>int</span> <span class=n>a</span> <span class=o>=</span> <span class=n>1</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>   <span class=kd>public</span> <span class=kt>int</span> <span class=nf>add</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>      <span class=kt>int</span> <span class=n>b</span> <span class=o>=</span> <span class=n>2</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>      <span class=kt>int</span> <span class=n>c</span> <span class=o>=</span> <span class=n>a</span> <span class=o>+</span> <span class=n>b</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>      <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=n>c</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>   <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>编译生成的字节码如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>➜  Test hexdump ByteCodeDemo.class
+</span></span><span class=line><span class=cl>0000000 ca fe ba be 00 00 00 34 00 24 0a 00 06 00 16 09
+</span></span><span class=line><span class=cl>0000010 00 05 00 17 09 00 18 00 19 0a 00 1a 00 1b 07 00
+</span></span><span class=line><span class=cl>0000020 1c 07 00 1d 01 00 01 61 01 00 01 49 01 00 06 3c
+</span></span><span class=line><span class=cl>0000030 69 6e 69 74 3e 01 00 03 28 29 56 01 00 04 43 6f
+</span></span><span class=line><span class=cl>0000040 64 65 01 00 0f 4c 69 6e 65 4e 75 6d 62 65 72 54
+</span></span><span class=line><span class=cl>0000050 61 62 6c 65 01 00 12 4c 6f 63 61 6c 56 61 72 69
+</span></span><span class=line><span class=cl>0000060 61 62 6c 65 54 61 62 6c 65 01 00 04 74 68 69 73
+</span></span><span class=line><span class=cl>0000070 01 00 0e 4c 42 79 74 65 43 6f 64 65 44 65 6d 6f
+</span></span><span class=line><span class=cl>0000080 3b 01 00 03 61 64 64 01 00 03 28 29 49 01 00 01
+</span></span><span class=line><span class=cl>0000090 62 01 00 01 63 01 00 0a 53 6f 75 72 63 65 46 69
+</span></span><span class=line><span class=cl>00000a0 6c 65 01 00 11 42 79 74 65 43 6f 64 65 44 65 6d
+</span></span><span class=line><span class=cl>00000b0 6f 2e 6a 61 76 61 0c 00 09 00 0a 0c 00 07 00 08
+</span></span><span class=line><span class=cl>00000c0 07 00 1e 0c 00 1f 00 20 07 00 21 0c 00 22 00 23
+</span></span><span class=line><span class=cl>00000d0 01 00 0c 42 79 74 65 43 6f 64 65 44 65 6d 6f 01
+</span></span><span class=line><span class=cl>00000e0 00 10 6a 61 76 61 2f 6c 61 6e 67 2f 4f 62 6a 65
+</span></span><span class=line><span class=cl>00000f0 63 74 01 00 10 6a 61 76 61 2f 6c 61 6e 67 2f 53
+</span></span><span class=line><span class=cl>0000100 79 73 74 65 6d 01 00 03 6f 75 74 01 00 15 4c 6a
+</span></span><span class=line><span class=cl>0000110 61 76 61 2f 69 6f 2f 50 72 69 6e 74 53 74 72 65
+</span></span><span class=line><span class=cl>0000120 61 6d 3b 01 00 13 6a 61 76 61 2f 69 6f 2f 50 72
+</span></span><span class=line><span class=cl>0000130 69 6e 74 53 74 72 65 61 6d 01 00 07 70 72 69 6e
+</span></span><span class=line><span class=cl>0000140 74 6c 6e 01 00 04 28 49 29 56 00 21 00 05 00 06
+</span></span><span class=line><span class=cl>0000150 00 00 00 01 00 02 00 07 00 08 00 00 00 02 00 01
+</span></span><span class=line><span class=cl>0000160 00 09 00 0a 00 01 00 0b 00 00 00 38 00 02 00 01
+</span></span><span class=line><span class=cl>0000170 00 00 00 0a 2a b7 00 01 2a 04 b5 00 02 b1 00 00
+</span></span><span class=line><span class=cl>0000180 00 02 00 0c 00 00 00 0a 00 02 00 00 00 01 00 04
+</span></span><span class=line><span class=cl>0000190 00 02 00 0d 00 00 00 0c 00 01 00 00 00 0a 00 0e
+</span></span><span class=line><span class=cl>00001a0 00 0f 00 00 00 01 00 10 00 11 00 01 00 0b 00 00
+</span></span><span class=line><span class=cl>00001b0 00 5c 00 02 00 03 00 00 00 12 05 3c 2a b4 00 02
+</span></span><span class=line><span class=cl>00001c0 1b 60 3d b2 00 03 1c b6 00 04 1c ac 00 00 00 02
+</span></span><span class=line><span class=cl>00001d0 00 0c 00 00 00 12 00 04 00 00 00 05 00 02 00 06
+</span></span><span class=line><span class=cl>00001e0 00 09 00 07 00 10 00 08 00 0d 00 00 00 20 00 03
+</span></span><span class=line><span class=cl>00001f0 00 00 00 12 00 0e 00 0f 00 00 00 02 00 10 00 12
+</span></span><span class=line><span class=cl>0000200 00 08 00 01 00 09 00 09 00 13 00 08 00 02 00 01
+</span></span><span class=line><span class=cl>0000210 00 14 00 00 00 02 00 15
+</span></span><span class=line><span class=cl>0000218
+</span></span></code></pre></td></tr></table></div></div><p>通过反编译后可得到如下信息：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span><span class=lnt>94
+</span><span class=lnt>95
+</span><span class=lnt>96
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>➜  Test javap -v ByteCodeDemo
+</span></span><span class=line><span class=cl>Classfile /Users/Jie/IdeaProjects/Test/out/production/Test/ByteCodeDemo.class
+</span></span><span class=line><span class=cl>  Last modified 2021年8月30日; size 536 bytes
+</span></span><span class=line><span class=cl>  MD5 checksum aa05281ffe821ab9f1e1c192a69a5688
+</span></span><span class=line><span class=cl>  Compiled from &#34;ByteCodeDemo.java&#34;
+</span></span><span class=line><span class=cl>public class ByteCodeDemo
+</span></span><span class=line><span class=cl>  minor version: 0
+</span></span><span class=line><span class=cl>  major version: 52
+</span></span><span class=line><span class=cl>  flags: (0x0021) ACC_PUBLIC, ACC_SUPER
+</span></span><span class=line><span class=cl>  this_class: #5                          // ByteCodeDemo
+</span></span><span class=line><span class=cl>  super_class: #6                         // java/lang/Object
+</span></span><span class=line><span class=cl>  interfaces: 0, fields: 1, methods: 2, attributes: 1
+</span></span><span class=line><span class=cl>Constant pool:
+</span></span><span class=line><span class=cl>   #1 = Methodref          #6.#22    // java/lang/Object.&#34;&lt;init&gt;&#34;:()V
+</span></span><span class=line><span class=cl>   #2 = Fieldref           #5.#23    // ByteCodeDemo.a:I
+</span></span><span class=line><span class=cl>   #3 = Fieldref           #24.#25   // java/lang/System.out:Ljava/io/PrintStream;
+</span></span><span class=line><span class=cl>   #4 = Methodref          #26.#27   // java/io/PrintStream.println:(I)V
+</span></span><span class=line><span class=cl>   #5 = Class              #28       // ByteCodeDemo
+</span></span><span class=line><span class=cl>   #6 = Class              #29       // java/lang/Object
+</span></span><span class=line><span class=cl>   #7 = Utf8               a
+</span></span><span class=line><span class=cl>   #8 = Utf8               I
+</span></span><span class=line><span class=cl>   #9 = Utf8               &lt;init&gt;
+</span></span><span class=line><span class=cl>  #10 = Utf8               ()V
+</span></span><span class=line><span class=cl>  #11 = Utf8               Code
+</span></span><span class=line><span class=cl>  #12 = Utf8               LineNumberTable
+</span></span><span class=line><span class=cl>  #13 = Utf8               LocalVariableTable
+</span></span><span class=line><span class=cl>  #14 = Utf8               this
+</span></span><span class=line><span class=cl>  #15 = Utf8               LByteCodeDemo;
+</span></span><span class=line><span class=cl>  #16 = Utf8               add
+</span></span><span class=line><span class=cl>  #17 = Utf8               ()I
+</span></span><span class=line><span class=cl>  #18 = Utf8               b
+</span></span><span class=line><span class=cl>  #19 = Utf8               c
+</span></span><span class=line><span class=cl>  #20 = Utf8               SourceFile
+</span></span><span class=line><span class=cl>  #21 = Utf8               ByteCodeDemo.java
+</span></span><span class=line><span class=cl>  #22 = NameAndType        #9:#10         // &#34;&lt;init&gt;&#34;:()V
+</span></span><span class=line><span class=cl>  #23 = NameAndType        #7:#8          // a:I
+</span></span><span class=line><span class=cl>  #24 = Class              #30            // java/lang/System
+</span></span><span class=line><span class=cl>  #25 = NameAndType        #31:#32        // out:Ljava/io/PrintStream;
+</span></span><span class=line><span class=cl>  #26 = Class              #33            // java/io/PrintStream
+</span></span><span class=line><span class=cl>  #27 = NameAndType        #34:#35        // println:(I)V
+</span></span><span class=line><span class=cl>  #28 = Utf8               ByteCodeDemo
+</span></span><span class=line><span class=cl>  #29 = Utf8               java/lang/Object
+</span></span><span class=line><span class=cl>  #30 = Utf8               java/lang/System
+</span></span><span class=line><span class=cl>  #31 = Utf8               out
+</span></span><span class=line><span class=cl>  #32 = Utf8               Ljava/io/PrintStream;
+</span></span><span class=line><span class=cl>  #33 = Utf8               java/io/PrintStream
+</span></span><span class=line><span class=cl>  #34 = Utf8               println
+</span></span><span class=line><span class=cl>  #35 = Utf8               (I)V
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  public ByteCodeDemo();
+</span></span><span class=line><span class=cl>    descriptor: ()V
+</span></span><span class=line><span class=cl>    flags: (0x0001) ACC_PUBLIC
+</span></span><span class=line><span class=cl>    Code:
+</span></span><span class=line><span class=cl>      stack=2, locals=1, args_size=1
+</span></span><span class=line><span class=cl>         0: aload_0
+</span></span><span class=line><span class=cl>         1: invokespecial #1  // Method java/lang/Object.&#34;&lt;init&gt;&#34;:()V
+</span></span><span class=line><span class=cl>         4: aload_0
+</span></span><span class=line><span class=cl>         5: iconst_1
+</span></span><span class=line><span class=cl>         6: putfield      #2  // Field a:I
+</span></span><span class=line><span class=cl>         9: return
+</span></span><span class=line><span class=cl>      LineNumberTable:
+</span></span><span class=line><span class=cl>        line 1: 0
+</span></span><span class=line><span class=cl>        line 2: 4
+</span></span><span class=line><span class=cl>      LocalVariableTable:
+</span></span><span class=line><span class=cl>        Start  Length  Slot  Name   Signature
+</span></span><span class=line><span class=cl>            0      10     0  this   LByteCodeDemo;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  public int add();
+</span></span><span class=line><span class=cl>    descriptor: ()I
+</span></span><span class=line><span class=cl>    flags: (0x0001) ACC_PUBLIC
+</span></span><span class=line><span class=cl>    Code:
+</span></span><span class=line><span class=cl>      stack=2, locals=3, args_size=1
+</span></span><span class=line><span class=cl>         0: iconst_2
+</span></span><span class=line><span class=cl>         1: istore_1
+</span></span><span class=line><span class=cl>         2: aload_0
+</span></span><span class=line><span class=cl>         3: getfield      #2 // Field a:I
+</span></span><span class=line><span class=cl>         6: iload_1
+</span></span><span class=line><span class=cl>         7: iadd
+</span></span><span class=line><span class=cl>         8: istore_2
+</span></span><span class=line><span class=cl>         9: getstatic     #3 // Field java/lang/System.out:Ljava/io/PrintStream;
+</span></span><span class=line><span class=cl>        12: iload_2
+</span></span><span class=line><span class=cl>        13: invokevirtual #4 // Method java/io/PrintStream.println:(I)V
+</span></span><span class=line><span class=cl>        16: iload_2
+</span></span><span class=line><span class=cl>        17: ireturn
+</span></span><span class=line><span class=cl>      LineNumberTable:
+</span></span><span class=line><span class=cl>        line 5: 0
+</span></span><span class=line><span class=cl>        line 6: 2
+</span></span><span class=line><span class=cl>        line 7: 9
+</span></span><span class=line><span class=cl>        line 8: 16
+</span></span><span class=line><span class=cl>      LocalVariableTable:
+</span></span><span class=line><span class=cl>        Start  Length  Slot  Name   Signature
+</span></span><span class=line><span class=cl>            0      18     0  this   LByteCodeDemo;
+</span></span><span class=line><span class=cl>            2      16     1     b   I
+</span></span><span class=line><span class=cl>            9       9     2     c   I
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>SourceFile: &#34;ByteCodeDemo.java&#34;
+</span></span></code></pre></td></tr></table></div></div><p>反编译的过程将看似毫无规律的十六进制数字还原出了更直观易懂的信息，可见字节码的生成必然遵循着某个固定而特殊的规律，下面将一一对它们进行解析。</p><a href=#魔数magic-number><h2 id=魔数magic-number><span class=hanchor arialabel=Anchor># </span>魔数（Magic Number）</h2></a><p>.class 文件的头四个字节称为魔数（Magic Number），可以看到 .class 的魔数为 0xCAFEBABE。很多文件都以魔数来进行文件类型的区分，比如 PDF 文件的魔数是 %PDF-(16 进制 0x255044462D)，png 文件的魔数是\x89PNG（0x89504E47）。文件格式的制定者可以自由的选择魔数值，只要魔数值还没有被广泛的采用过且不会引起混淆即可。</p><p>魔数放在文件开头，JVM 可以根据文件的开头来判断这个文件是否可能是一个 .class 文件，如果是，才会继续进行之后的操作。</p><a href=#版本号minor--major-version><h2 id=版本号minor--major-version><span class=hanchor arialabel=Anchor># </span>版本号（Minor & Major Version）</h2></a><p>版本号为魔数之后的 4 个字节，前两个字节表示次版本号（Minor Version），后两个字节表示主版本号（Major Version）。上面示例中版本号对应的字节码为“00 00 00 34”，次版本号转化为十进制为 0，主版本号转化为十进制为 52，对应的主版本号为 1.8，所以编译该文件的 Java 版本号为 1.8.0（每次 Java 发布大版本时，主版本号加 1）。</p><a href=#常量池constant-pool><h2 id=常量池constant-pool><span class=hanchor arialabel=Anchor># </span>常量池（Constant Pool）</h2></a><p>紧接着主版本号之后的字节为常量池入口。常量池整体上分为两部分：常量池计数器（存储常量池大小计数）以及常量池数据区（存储常量池项），如下图所示。</p><p><img src=https://www.guanpj.top//static/boxcnRAcBVKioatXxFhpOOr3F9e.png width=auto alt></p><a href=#常量池计数器constant_pool_count><h3 id=常量池计数器constant_pool_count><span class=hanchor arialabel=Anchor># </span>常量池计数器（constant_pool_count）</h3></a><p>由于常量的数量不固定，所以需要先放置两个字节来表示常量池容量计数值。本文示例中的代码常量池计数对应的字节码为“00 24”，将十六进制的 24 转化为十进制值为 36，排除掉下标“0”，也就是说，这个类文件中共有 35 个常量。</p><a href=#常量池数据区constant_poolconstant_pool_count-1><h3 id=常量池数据区constant_poolconstant_pool_count-1><span class=hanchor arialabel=Anchor># </span>常量池数据区（constant_pool[constant_pool_count-1]）</h3></a><p>常量池项中存储两类常量：字面量与符号引用。字面量如声明为 Final 的常量值和文本字符串等，符号引用分为类和接口的全局限定名、字段的名称和描述符、方法的名称和描述符。</p><p>数据区是由（constant_pool_count-1）个 cp_info 结构组成，一个 cp_info 结构对应一个常量。</p><p>目前在字节码中共有 14 种类型的 cp_info（如下图所示），每种类型的结构都是固定的。</p><table><thead><tr><th>类型</th><th>标志（tag）</th><th>描述</th></tr></thead><tbody><tr><td>CONSTANT_utf8_info</td><td>1</td><td>UTF-8 编码的字符串</td></tr><tr><td>CONSTANT_Integer_info</td><td>3</td><td>整形字面量</td></tr><tr><td>CONSTANT_Float_info</td><td>4</td><td>浮点型字面量</td></tr><tr><td>CONSTANT_Long_info</td><td>５</td><td>长整型字面量</td></tr><tr><td>CONSTANT_Double_info</td><td>６</td><td>双精度浮点型字面量</td></tr><tr><td>CONSTANT_Class_info</td><td>７</td><td>类或接口的符号引用</td></tr><tr><td>CONSTANT_String_info</td><td>８</td><td>字符串类型字面量</td></tr><tr><td>CONSTANT_Fieldref_info</td><td>９</td><td>字段的符号引用</td></tr><tr><td>CONSTANT_Methodref_info</td><td>10</td><td>类中方法的符号引用</td></tr><tr><td>CONSTANT_InterfaceMethodref_info</td><td>11</td><td>接口中方法的符号引用</td></tr><tr><td>CONSTANT_NameAndType_info</td><td>12</td><td>字段或方法的符号引用</td></tr><tr><td>CONSTANT_MothodType_info</td><td>16</td><td>方法类型</td></tr><tr><td>CONSTANT_MethodHandle_info</td><td>15</td><td>方法句柄</td></tr><tr><td>CONSTANT_InvokeDynamic_info</td><td>18</td><td>动态方法调用点</td></tr></tbody></table><p>具体以 CONSTANT_utf8_info 为例，它的结构如下图所示。首先一个字节“tag”，它的值取自上图中对应项的 Tag，由于它的类型是 utf8_info，所以值为“01”。接下来两个字节标识该字符串的长度 Length，然后 Length 个字节为这个字符串具体的值。</p><p>从前文示例中的字节码摘取一个 cp_info 结构，如下图所示。</p><p><img src=https://www.guanpj.top//static/boxcnlJJ3NIsuvEuTTWfzB3gJWb.png width=auto alt></p><p>将它翻译过来后，其含义为：该常量类型为 utf8 字符串，长度为一字节，数据为“a”。</p><p><img src=https://www.guanpj.top//static/boxcnoYCKARu6A7fWgD6J8y5OOJ.png width=auto alt></p><p>下面来逐一详细介绍这些常量池项。</p><a href=#constant_utf8_info><h4 id=constant_utf8_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_Utf8_info</h4></a><p>CONSTANT_Utf8_info 存储的是经过 MUTF-8(modified UTF-8) 编码的字符串，结构如下:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_Utf8_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 length;
+</span></span><span class=line><span class=cl>    u1 bytes[length];
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>它由三部分构成：</p><ol><li>第一部分 tag 值为固定为 1</li><li>第二部分 length 表示字符串的长度</li><li>第三部分是采用 MUTF-8 编码的长度为 length 的字节数组</li></ol><p>如果要存储的字符串是"hello"，存储结构如下图所示</p><p><img src=https://www.guanpj.top//static/boxcnglozJXM2xsd4b9XtXKtMXd.png width=auto alt></p><p>MUTF-8 编码与标准的 UTF-8 编码大部分情况下是相同的，但也有一些细微的区别，比如在 MUTF-8 里空字符("\u0000")用两个字节 0xC080 表示，而在标准的 UTF-8 编码里的表述方式为 0x00，还有一些其它的差异这里不做深入的展开。</p><a href=#constant_integer_info-和-constant_float_info><h4 id=constant_integer_info-和-constant_float_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_Integer_info 和 CONSTANT_Float_info</h4></a><p>这两种结构分别用来表示 int 和 float 类型的常量，这两种类型的结构很类似，都用四个字节来表示具体的数值常量，它们的结构定义如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_Integer_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u4 bytes;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>CONSTANT_Float_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u4 bytes;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>以整型常量 18(0x12) 为例，它在常量池中的布局结构如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnQxx1hRx7YZ5WTY33jM9Jkd.png width=auto alt></p><p>Java 语言规范还定义了 boolean、byte、short 和 char 类型的变量，在常量池中都会被当做 int 来处理，比如用代码定义了下面的常量：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>public class MyConstantTest {
+</span></span><span class=line><span class=cl>    public final boolean bool = true; //  1(0x01)
+</span></span><span class=line><span class=cl>    public final char c = &#39;A&#39;;        // 65(0x41)
+</span></span><span class=line><span class=cl>    public final byte b = 66;         // 66(0x42)
+</span></span><span class=line><span class=cl>    public final short s = 67;        // 67(0x43)
+</span></span><span class=line><span class=cl>    public final int i = 68;          // 68(0x44)
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>编译生成的 class 文件如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnxghxz55lxR24BEeO7J4IFd.png width=auto alt></p><a href=#constant_long_info-和-constant_double_info><h4 id=constant_long_info-和-constant_double_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_Long_info 和 CONSTANT_Double_info</h4></a><p>这两种结构分别用来表示 long 和 double 类型的常量，这两个结构类似，都用 8 个字节表示具体的常量数值。它们的结构如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_Long_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u4 high_bytes;
+</span></span><span class=line><span class=cl>    u4 low_bytes;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>CONSTANT_Double_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u4 high_bytes;
+</span></span><span class=line><span class=cl>    u4 low_bytes;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>对应的结构如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnw4fKxeJeUtoutX0LlsH9xd.png width=auto alt></p><p>以下面的代码为例</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>public class HelloWorldMain {
+</span></span><span class=line><span class=cl>    public final long a = Long.MAX_VALUE; 
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>javap 输出的常量池信息如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>Constant pool:
+</span></span><span class=line><span class=cl>   #1 = Methodref          #7.#17         // java/lang/Object.&#34;&lt;init&gt;&#34;:()V
+</span></span><span class=line><span class=cl>   #2 = Class              #18            // java/lang/Long
+</span></span><span class=line><span class=cl>   #3 = Long               9223372036854775807l
+</span></span><span class=line><span class=cl>   #5 = Fieldref           #6.#19         // HelloWorldMain.a:J
+</span></span></code></pre></td></tr></table></div></div><p>前面提到过，CONSTANT_Long_info 和 CONSTANT_Double_info 占用两个常量池位置，可以看到常量 a 占用了 #3 和 #4 两个位置，下一个常量从索引值 5 开始。</p><p><img src=https://www.guanpj.top//static/boxcnYdwhTSIEh2LOVH65Q9Roed.png width=auto alt></p><a href=#constant_class_info><h4 id=constant_class_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_Class_info</h4></a><p>CONSTANT_Class_info 结构用来表示类或接口，它的结构如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_Class_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 name_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>它由两部分组成，第一个字节是 tag，值为 7，tag 后面的两个字节 name_index 是一个常量池索引，指向类型为 CONSTANT_Utf8_info 常量，这个字符串存储的是类或接口的全限定名。如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnsbv5Pcz2WFCdEy1irInLdc.png width=auto alt></p><a href=#constant_string_info><h4 id=constant_string_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_String_info</h4></a><p>CONSTANT_String_info 用来表示 java.lang.String 类型的常量对象，同样由两部分构成：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_String_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 string_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>第一个字节是 tag，值为 8，tag 后面的两个字节是一个叫 string_index 的索引值，指向常量池中的 CONSTANT_Utf8_info，这个 CONSTANT_Utf8_info 中存储的才是真正的字符串常量。</p><p>以下面的代码为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>HelloWorldMain</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>String</span> <span class=n>a</span> <span class=o>=</span> <span class=s>&#34;hello&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>CONSTANT_String_info 的存储布局方式为：</p><p><img src=https://www.guanpj.top//static/boxcnkuaAMiOGNfEanZiRNtV1dh.png width=auto alt></p><a href=#constant_fieldref_infoconstant_methodref_info-和-constant_interfacemethodref_info><h4 id=constant_fieldref_infoconstant_methodref_info-和-constant_interfacemethodref_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_Fieldref_info、CONSTANT_Methodref_info 和 CONSTANT_InterfaceMethodref_info</h4></a><p>这三种常量类型结构比较类似</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_Fieldref_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 class_index;
+</span></span><span class=line><span class=cl>    u2 name_and_type_index;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>CONSTANT_Methodref_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 class_index;
+</span></span><span class=line><span class=cl>    u2 name_and_type_index;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>CONSTANT_InterfaceMethodref_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 class_index;
+</span></span><span class=line><span class=cl>    u2 name_and_type_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>下面以 CONSTANT_Methodref_info 为例来介绍如何描述一个方法。</p><p>方法 = 方法所属的类 + 方法名 + 方法参数和返回值描述符</p><p>这就是 CONSTANT_Methodref_info 的作用，它表示类中方法的符号引用</p><p>它由三部分构成</p><ul><li>第一部分也是 tag，值为 10</li><li>第二个部分是 class_index，是一个指向 CONSTANT_Class_info 的常量池索引值</li><li>第三部分是 name_and_type_index，是一个指向 CONSTANT_NameAndType_info 的常量池索引值，表示方法的参数类型和返回值的签名</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>HelloWorldMain</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>HelloWorldMain</span><span class=o>().</span><span class=na>testMethod</span><span class=o>(</span><span class=n>1</span><span class=o>,</span> <span class=s>&#34;hi&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>testMethod</span><span class=o>(</span><span class=kt>int</span> <span class=n>id</span><span class=o>,</span> <span class=n>String</span> <span class=n>name</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Constant pool:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>   #2 = Class              #18            // HelloWorldMain
+</span></span><span class=line><span class=cl>   #5 = Methodref          #2.#20         // HelloWorldMain.testMethod:(ILjava/lang/String;)V
+</span></span><span class=line><span class=cl>  #20 = NameAndType        #13:#14        // testMethod:(ILjava/lang/String;)V
+</span></span></code></pre></td></tr></table></div></div><p>结构布局示意图如下：</p><p><img src=https://www.guanpj.top//static/boxcnX4C4I8q1iJ5YNvckikrLXg.png width=auto alt></p><a href=#constant_nameandtype_info><h4 id=constant_nameandtype_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_NameAndType_info</h4></a><p>CONSTANT_NameAndType_info 结构用来表示字段或者方法，格式如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_NameAndType_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 name_index;
+</span></span><span class=line><span class=cl>    u2 descriptor_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>它由三部分组成：</p><ul><li>tag : 值为 12</li><li>name_index : 指向常量池中的 CONSTANT_Utf8_info，存储的是字段名或者方法名</li><li>descriptor_index : 也是指向常量池中的 CONSTANT_Utf8_info，存储的是字段描述符或者方法描述符</li></ul><p>以下面的方法为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>testMethod</span><span class=o>(</span><span class=kt>int</span> <span class=n>id</span><span class=o>,</span> <span class=n>String</span> <span class=n>name</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>CONSTANT_NameAndType_info 的结构布局示意图如下：</p><p><img src=https://www.guanpj.top//static/boxcnTMVJQxDbRQr2Yj56r48Ywd.png width=auto alt></p><a href=#constant_methodtype_infoconstant_methodhandle_info-和-constant_invokedynamic_info><h4 id=constant_methodtype_infoconstant_methodhandle_info-和-constant_invokedynamic_info><span class=hanchor arialabel=Anchor># </span>CONSTANT_MethodType_info、CONSTANT_MethodHandle_info 和 CONSTANT_InvokeDynamic_info</h4></a><p>从 JDK1.7 开始，为了更好的支持动态语言调用，新增了以上 3 种常量池类型。</p><p>以 CONSTANT_InvokeDynamic_info 为例，它主要为 invokedynamic 指令提供启动引导方法，它由三部分构成：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>CONSTANT_InvokeDynamic_info {
+</span></span><span class=line><span class=cl>    u1 tag;
+</span></span><span class=line><span class=cl>    u2 bootstrap_method_attr_index;
+</span></span><span class=line><span class=cl>    u2 name_and_type_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><ul><li>tag：值为 18</li><li>bootstrap_method_attr_index：指向引导方法表 bootstrap_methods[] 数组的索引</li><li>name_and_type_index：指向索引类常量池里 CONSTANT_NameAndType_info，表示方法描述符</li></ul><p>比如下面的的代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>foo</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>new</span> <span class=n>Thread</span> <span class=o>(()-&gt;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;hello&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>javap 输出的常量池的部分如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>Constant pool:
+</span></span><span class=line><span class=cl>   #3 = InvokeDynamic      #0:#25         // #0:run:()Ljava/lang/Runnable;
+</span></span><span class=line><span class=cl>   ...
+</span></span><span class=line><span class=cl>  #25 = NameAndType        #37:#38        // run:()Ljava/lang/Runnable;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>BootstrapMethods:
+</span></span><span class=line><span class=cl>  0: #22 invokestatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+</span></span><span class=line><span class=cl>    Method arguments:
+</span></span><span class=line><span class=cl>      #23 ()V
+</span></span><span class=line><span class=cl>      #24 invokestatic HelloWorldMain.lambda$foo$0:()V
+</span></span><span class=line><span class=cl>      #23 ()V
+</span></span></code></pre></td></tr></table></div></div><p>整体的结构如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnRDdo2x0Kya4uGFXaka6gNe.png width=auto alt></p><a href=#类访问标记access-flags><h2 id=类访问标记access-flags><span class=hanchor arialabel=Anchor># </span>类访问标记(Access Flags)</h2></a><p>常量池之后存储的是访问标记（Access flags），用来标识一个类是是不是 final、abstract 等，由两个字节表示总共可以有 16 个标记位可供使用，目前只使用了其中的 8 个。</p><p><img src=https://www.guanpj.top//static/boxcnIlKqPR8zZnaVqJsjZMEYNg.png width=auto alt></p><p>具体的标记位含义如下</p><table><thead><tr><th>Flag Name</th><th>Value</th><th>Interpretation</th></tr></thead><tbody><tr><td>ACC_PUBLIC</td><td>1</td><td>标识是否是 public</td></tr><tr><td>ACC_FINAL</td><td>10</td><td>标识是否是 final</td></tr><tr><td>ACC_SUPER</td><td>20</td><td>已经不用了</td></tr><tr><td>ACC_INTERFACE</td><td>200</td><td>标识是类还是接口</td></tr><tr><td>ACC_ABSTRACT</td><td>400</td><td>标识是否是 abstract</td></tr><tr><td>ACC_SYNTHETIC</td><td>1000</td><td>编译器自动生成，不是用户源代码编译生成</td></tr><tr><td>ACC_ANNOTATION</td><td>2000</td><td>标识是否是注解类</td></tr><tr><td>ACC_ENUM</td><td>4000</td><td>标识是否是枚举类</td></tr></tbody></table><p>JVM 并没有穷举所有的访问标志，而是使用按位或操作来进行描述的，比如某个类的修饰符为 Public Final，则对应的访问修饰符的值为 ACC_PUBLIC | ACC_FINAL，即 0x0001 | 0x0010=0x0011。</p><a href=#类索引this-class超类索引super-class和接口表索引interfaces><h2 id=类索引this-class超类索引super-class和接口表索引interfaces><span class=hanchor arialabel=Anchor># </span>类索引（This Class）、超类索引（Super Class）和接口表索引（Interfaces）</h2></a><p>这三个部分用来确定类的继承关系，this_class 表示类索引，super_name 表示父类索引，interfaces 表示类或者接口的直接父接口。以 this_class 为例，它是一个两字节组成，执行常量池。</p><p>以下面代码为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>HelloWorld</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Hello, World&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>this_class 为 0x0005，指向常量池中下标为 5 的元素，这个元素是由两部分组成，第一部分是类型，这里是 Class 表示是一个类，第二部分是指向常量池下标 21 的元素，这个元素是字符串 &ldquo;HelloWorldMain&rdquo;。</p><p><img src=https://www.guanpj.top//static/boxcnYfH6pokcjiBINJXkypd1Wh.png width=auto alt></p><p>super_class 和 interfaces 的原理与之类似。</p><a href=#字段表fields><h2 id=字段表fields><span class=hanchor arialabel=Anchor># </span>字段表（Fields）</h2></a><a href=#字段表概述><h3 id=字段表概述><span class=hanchor arialabel=Anchor># </span>字段表概述</h3></a><p>紧随接口索引表之后的是字段表（Fields），类中定义的字段会被存储到这个集合中，包括类中定义的静态和非静态的字段，不包括方法内部定义的变量。</p><p>结构如下:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>u2</span>             <span class=n>fields_count</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>field_info</span>     <span class=n>fields</span><span class=o>[</span><span class=n>fields_count</span><span class=o>];</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>由两部分组成</p><ul><li>字段数量（fields_count）：字段表也是一个变长的结构，类中定义的若干个字段的个数会被存储到字段数量里。</li><li>字段集合（fields）：字段集合是一个类数组的结构，共有 fields_count 个，对应类中定义的若干个字段，每一个字段 field_info 的结构会在下面介绍。</li></ul><p>如下图所示:</p><p><img src=https://www.guanpj.top//static/boxcneFvQOLATDfINYhTn60HaNp.png width=auto alt></p><a href=#字段结构><h3 id=字段结构><span class=hanchor arialabel=Anchor># </span>字段结构</h3></a><p>每个字段（field_info）的格式如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>field_info {
+</span></span><span class=line><span class=cl>    u2             access_flags; 
+</span></span><span class=line><span class=cl>    u2             name_index;
+</span></span><span class=line><span class=cl>    u2             descriptor_index;
+</span></span><span class=line><span class=cl>    u2             attributes_count;
+</span></span><span class=line><span class=cl>    attribute_info attributes[attributes_count];
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>字段结构分为四部分：</p><ul><li>access_flags：字段的访问标记。是 public、private 还是 protected，是否是 static，是否是 final 等。</li><li>name_index：字段名的索引值，指向常量池的的字符串常量。</li><li>descriptor_index：字段描述符的索引，指向常量池的字符串常量。</li><li>attributes_count、attribute_info：属性的个数和属性集合。</li></ul><p>这些组成部分接下来的会有详细介绍。</p><a href=#字段访问标记><h3 id=字段访问标记><span class=hanchor arialabel=Anchor># </span>字段访问标记</h3></a><p>与类一样，字段也拥有自己的字段访问标记，不过要比类的访问标记要更丰富一些，共有 9 种，详细的列表如下：</p><table><thead><tr><th>访问标记名</th><th>十六进制值</th><th>描述</th></tr></thead><tbody><tr><td>ACC_PUBLIC</td><td>0x0001</td><td>声明为 public</td></tr><tr><td>ACC_PRIVATE</td><td>0x0002</td><td>声明为 private</td></tr><tr><td>ACC_PROTECTED</td><td>0x0004</td><td>声明为 protected</td></tr><tr><td>ACC_STATIC</td><td>0x0008</td><td>声明为 static</td></tr><tr><td>ACC_FINAL</td><td>0x0010</td><td>声明为 final</td></tr><tr><td>ACC_VOLATILE</td><td>0x0040</td><td>声明为 volatile，解决内存可见性的问题</td></tr><tr><td>ACC_TRANSIENT</td><td>0x0080</td><td>声明为 transient，被 transient 修饰的字段默认不会被序列化</td></tr><tr><td>ACC_SYNTHETIC</td><td>0x1000</td><td>表示这个字段是由编译器自动生成，而不是用户代码编译产生</td></tr><tr><td>ACC_ENUM</td><td>0x4000</td><td>表示这是一个枚举类型的变量</td></tr></tbody></table><p>如果在类中定义了如下的字段：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kd>final</span> <span class=kt>int</span> <span class=n>DEFAULT_SIZE</span> <span class=o>=</span> <span class=n>128</span><span class=o>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>编译后 DEFAULT_SIZE 字段在类文件中存储的访问标记值为 0x0019，则它的访问标记为 ACC_PUBLIC | ACC_STATIC | ACC_FINAL，表示它是一个 public static final 类型的变量。如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnfiGV3FwMsuDmrPfKGeyFsh.png width=auto alt></p><a href=#字段描述符><h3 id=字段描述符><span class=hanchor arialabel=Anchor># </span>字段描述符</h3></a><p>当定义一个 int 类型的变量时，类文件中存储的类型并不是字符串的 “int”，而是使用了更精简的 I 来表示。</p><p><strong>引用类型</strong>使用 “L;” 的方式来表示为了防止多个连续的引用类型描述符出现混淆，引用类型描述符最后都加上了一个 “;” 作为分隔。比如字符串类型 String 的描述符为 “Ljava/lang/String;"，</p><p>JVM 使用一个前置的 “[” 来表示数组类型，如 int[] 类型描述符为 “[I”，字符串数组 String[] 的描述符为 “[Ljava/lang/String;”。多维数组描述符只是多加了几个 “[” 而已，比如 Object[][][] 类型描述符为 “[[[Ljava/lang/Object;”。</p><p>完整的字段类型描述符映射表如下所示：</p><table><thead><tr><th>描述符</th><th>类型</th></tr></thead><tbody><tr><td>B</td><td>byte 类型</td></tr><tr><td>C</td><td>char 类型</td></tr><tr><td>D</td><td>double 类型</td></tr><tr><td>F</td><td>float 类型</td></tr><tr><td>I</td><td>int 类型</td></tr><tr><td>J</td><td>long 类型</td></tr><tr><td>S</td><td>short 类型</td></tr><tr><td>Z</td><td>bool 类型</td></tr><tr><td>L ClassName ;</td><td>引用类型，&ldquo;L&rdquo; + 对象类型的全限定名 + &ldquo;;&rdquo;</td></tr><tr><td>[</td><td>一维数组</td></tr></tbody></table><a href=#字段属性表><h3 id=字段属性表><span class=hanchor arialabel=Anchor># </span>字段属性表</h3></a><p>与字段相关的属性有下面这几个：ConstantValue、Synthetic 、Signature、Deprecated、RuntimeVisibleAnnotations 和 RuntimeInvisibleAnnotations 这六个，比较常见的是 ConstantValue 这属性，用来表示一个常量字段的值。</p><a href=#案例分析><h3 id=案例分析><span class=hanchor arialabel=Anchor># </span>案例分析</h3></a><p>以文章开头 ByteCodeDemo 类的字节码中的字段表为例，如下图所示。</p><p><img src=https://www.guanpj.top//static/boxcnhkYCPUuhnfj6seMHJCkV5L.png width=auto alt></p><p>0001：字段表计数。实例代码中只有一个字段，故值为 1</p><p>剩下为字段属性，一共由四个部分组成：</p><ol><li>0002：表示字段的访问标志。对应为 Private</li><li>0007：字段名称。指向常量池中第 7 项：字符 “a”</li><li>0008：字段描述符。指向常量池中第 8 项：字符 “I”（代表 int）</li><li>0000：字段属性个数。没有属性，值为 0</li></ol><p>综上，就可以唯一确定出一个类中声明的变量：private int a。</p><a href=#方法表methods><h2 id=方法表methods><span class=hanchor arialabel=Anchor># </span>方法表（Methods）</h2></a><a href=#方法表概述><h3 id=方法表概述><span class=hanchor arialabel=Anchor># </span>方法表概述</h3></a><p>在字段表后面的是方法表，类中定义的方法会被存储在这里，与前面介绍的字段表很类似，方法表也是一个变长结构：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>u2</span>             <span class=n>methods_count</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>method_info</span>    <span class=n>methods</span><span class=o>[</span><span class=n>methods_count</span><span class=o>];</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>由表示方法个数的 methods_count 和对应个数的方法项集合组成，如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcnYRn6VyBjUALNLwpaaXmCGh.png width=auto alt></p><a href=#方法结构><h3 id=方法结构><span class=hanchor arialabel=Anchor># </span>方法结构</h3></a><p>每个字段（method_info）的格式如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>method_info {
+</span></span><span class=line><span class=cl>    u2             access_flags;
+</span></span><span class=line><span class=cl>    u2             name_index;
+</span></span><span class=line><span class=cl>    u2             descriptor_index;
+</span></span><span class=line><span class=cl>    u2             attributes_count;
+</span></span><span class=line><span class=cl>    attribute_info attributes[attributes_count];
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>字段结构分为四部分：</p><ul><li>access_flags：方法的访问标记。是 public、private 还是 protected，是否是 static，是否是 final 等。</li><li>name_index：方法名的索引值，指向常量池的的字符串常量。</li><li>descriptor_index：方法描述符的索引，指向常量池的字符串常量。</li><li>attributes_count、attribute_info：属性的个数和属性集合。</li></ul><a href=#方法访问标记><h3 id=方法访问标记><span class=hanchor arialabel=Anchor># </span>方法访问标记</h3></a><p>方法的访问标记比类和字段的访问标记类型更丰富，有 12 种之多，如下表所示：</p><table><thead><tr><th>方法访问标记</th><th>值</th><th>描述</th></tr></thead><tbody><tr><td>ACC_PUBLIC</td><td>0x0001</td><td>声明为 public</td></tr><tr><td>ACC_PRIVATE</td><td>0x0002</td><td>声明为 private</td></tr><tr><td>ACC_PROTECTED</td><td>0x0004</td><td>声明为 protected</td></tr><tr><td>ACC_STATIC</td><td>0x0008</td><td>声明为 static</td></tr><tr><td>ACC_FINAL</td><td>0x0010</td><td>声明为 final</td></tr><tr><td>ACC_SYNCHRONIZED</td><td>0x0020</td><td>声明为 synchronized</td></tr><tr><td>ACC_BRIDGE</td><td>0x0040</td><td>bridge 方法, 由编译器生成</td></tr><tr><td>ACC_VARARGS</td><td>0x0080</td><td>方法包含可变长度参数，比如 String&mldr; args</td></tr><tr><td>ACC_NATIVE</td><td>0x0100</td><td>声明为 native</td></tr><tr><td>ACC_ABSTRACT</td><td>0x0400</td><td>声明为 abstract</td></tr><tr><td>ACC_STRICT</td><td>0x0800</td><td>声明为 strictfp，表示使用 IEEE-754 规范的精确浮点数，极少使用</td></tr><tr><td>ACC_SYNTHETIC</td><td>0x1000</td><td>表示这个方法是由编译器自动生成，而不是用户代码编译产生</td></tr></tbody></table><p>以下面的代码为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>private</span> <span class=kd>static</span> <span class=kd>synchronized</span> <span class=kt>void</span> <span class=nf>foo</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>生成的类文件中 foo 方法的访问标记等于 0x002a（ACC_PRIVATE | ACC_STATIC | ACC_SYNCHRONIZED），，表示这是一个 private static synchronized 的方法，如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcn5MLe8x4tSSIltG15Zix6Bb.png width=auto alt></p><a href=#方法名与描述符><h3 id=方法名与描述符><span class=hanchor arialabel=Anchor># </span>方法名与描述符</h3></a><p>紧随方法访问标记是方法名索引 name_index，指向常量池中 CONSTANT_Utf8_info 类型的字符串常量，比如有这样一个方法定义 “private void foo()”，编译器会生成一个类型为 CONSTANT_Utf8_info 的字符串常量项，里面存储了 “foo”，方法名索引 name_index 指向了这个常量项。</p><p>方法描述符索引 descriptor_index，它也是方法名指向常量池中类型为 CONSTANT_Utf8_info 的字符串常量项。方法描述符用来表示一个方法所需参数和返回值，格式为：</p><p>(参数 1 类型 参数 2 类型 参数 3 类型 &mldr;)返回值类型</p><p>比如方法 “Object foo(int i, double d, Thread t)” 的描述符为“(IDLjava/lang/Thread;)Ljava/lang/Object;”，其中 “I” 表示第一个参数 i 的参数类型 int，“D” 表示第二个参数 d 的类型 double，“Ljava/lang/Thread;” 表示第三个参数 t 的类型 Thread，“Ljava/lang/Object;” 表示返回值类型 Object。</p><p>如下图所示:</p><p><img src=https://www.guanpj.top//static/boxcnohqABY9UKJFDi2ic5S6pyb.png width=auto alt></p><a href=#方法属性表><h3 id=方法属性表><span class=hanchor arialabel=Anchor># </span>方法属性表</h3></a><p>前面介绍了方法的访问标记、方法签名，还有一些重要的信息没有出现，如方法声明抛出的异常，方法的字节码，方法是否被标记为 deprecated，这些信息存在哪里呢？这就是方法属性表的作用。跟方法相关的属性有很多，其中重要的是 Code 和 Exceptions 属性，其中 Code 属性存放方法体的字节码指令，Exceptions 属性用于存储方法声明抛出的异常。</p><a href=#案例分析-1><h3 id=案例分析-1><span class=hanchor arialabel=Anchor># </span>案例分析</h3></a><p>还是以文章中 ByteCodeDemo 类的字节码中的字段表为例，如下图所示。</p><p><img src=https://www.guanpj.top//static/boxcn2QIufOsSvDNcqrr73NMJYe.png width=auto alt></p><p>共分为四个部分：</p><ol><li>0001：方法访问标记。表示 public</li><li>0010：方法名的索引值。指向第 16 个常量，即 “add”</li><li>0011：方法描述符的索引。指向第 17 个常量，即 ()I（返回值类型为 int）</li><li>0001000b&mldr;：属性表。0001 表示只有一个属性，000b 表示属性名称为 “Code”，具体分析见下文</li></ol><a href=#属性表attributes><h2 id=属性表attributes><span class=hanchor arialabel=Anchor># </span>属性表（Attributes）</h2></a><a href=#属性表概述><h3 id=属性表概述><span class=hanchor arialabel=Anchor># </span>属性表概述</h3></a><p>在方法表之后的结构是 class 文件的最后一步部分属性表。<strong>属性出现的地方比较广泛，不止出现在字段和方法中，在 class 文件中也会出现。</strong></p><p>相比于常量池只有 14 种固定的类型，属性表是的类型是更加灵活的，不同的虚拟机实现厂商可以自定义自己的属性，JVM 运行时会忽略掉它不认识的属性。</p><p>属性表的结构如下所示：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>u2</span>             <span class=n>attributes_count</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>attribute_info</span> <span class=n>attributes</span><span class=o>[</span><span class=n>attributes_count</span><span class=o>];</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>与其它结构类似，属性表使用两个字节表示属性的个数 attributes_count，接下来是若干个属性项的集合，可以看做是一个数组，数组的每一项都是一个属性项 attribute_info，数组的大小为 attributes_count。</p><a href=#属性结构><h3 id=属性结构><span class=hanchor arialabel=Anchor># </span>属性结构</h3></a><p>每个属性（attribute_info）的格式如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>attribute_info {
+</span></span><span class=line><span class=cl>    u2 attribute_name_index;
+</span></span><span class=line><span class=cl>    u4 attribute_length;
+</span></span><span class=line><span class=cl>    u1 info[attribute_length];
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>属性结构分为三部分：</p><ul><li>attribute_name_index：属性名索引</li><li>attribute_length：属性长度</li><li>info[attribute_length]：属性数组</li></ul><p>属性表其实只是定义了属性的长度，里面还有一个不定长的数组，具体的结构需要自己定义。</p><a href=#属性类型><h3 id=属性类型><span class=hanchor arialabel=Anchor># </span>属性类型</h3></a><table><thead><tr><th>属性名称</th><th>使用位置</th><th>含义</th></tr></thead><tbody><tr><td>Code</td><td>方法表</td><td>Java 代码编译成的字节码指令</td></tr><tr><td>ConstantValue</td><td>字段表</td><td>final 关键字定义的常量池</td></tr><tr><td>Deprecated</td><td>类，方法表，字段表</td><td>被声明为 deprecated 的方法和字段</td></tr><tr><td>Exceptions</td><td>方法表</td><td>方法抛出的异常</td></tr><tr><td>EnclosingMethod</td><td>类文件</td><td>仅当一个类为局部类或者匿名类是才能拥有这个属性，这个属性用于标识这个类所在的外围方法</td></tr><tr><td>InnerClass</td><td>类文件</td><td>内部类列表</td></tr><tr><td>LineNumberTable</td><td>Code 属性</td><td>Java 源码的行号与字节码指令的对应关系</td></tr><tr><td>LocalVariableTable</td><td>Code 属性</td><td>方法的局部变量描述</td></tr><tr><td>StackMapTable</td><td>Code 属性</td><td>JDK1.6 中新增的属性，供新的类型检查检验器检查和处理目标方法的局部变量和操作数有所需要的类是否匹配</td></tr><tr><td>Signature</td><td>类，方法表，字段表</td><td>用于支持泛型情况下的方法签名</td></tr><tr><td>SourceFile</td><td>类文件</td><td>记录源文件名称</td></tr><tr><td>SourceDebugExtension</td><td>类文件</td><td>用于存储额外的调试信息</td></tr><tr><td>Synthetic</td><td>类，方法表，字段表</td><td>标志方法或字段为编译器自动生成的</td></tr><tr><td>LocalVariableTypeTable</td><td>类</td><td>使用特征签名代替描述符，是为了引入泛型语法之后能描述泛型参数化类型而添加</td></tr><tr><td>RuntimeVisibleAnnotations</td><td>类，方法表，字段表</td><td>为动态注解提供支持</td></tr><tr><td>RuntimeInvisibleAnnotations</td><td>表，方法表，字段表</td><td>用于指明哪些注解是运行时不可见的</td></tr><tr><td>RuntimeVisibleParameterAnnotation</td><td>方法表</td><td>作用与 RuntimeVisibleAnnotations 属性类似，只不过作用对象为方法</td></tr><tr><td>RuntimeInvisibleParameterAnnotation</td><td>方法表</td><td>作用与 RuntimeInvisibleAnnotations 属性类似，作用对象哪个为方法参数</td></tr><tr><td>AnnotationDefault</td><td>方法表</td><td>用于记录注解类元素的默认值</td></tr><tr><td>BootstrapMethods</td><td>类文件</td><td>用于保存 invokeddynamic 指令引用的引导方式限定符</td></tr></tbody></table><a href=#constantvalue-属性><h3 id=constantvalue-属性><span class=hanchor arialabel=Anchor># </span>ConstantValue 属性</h3></a><p>ConstantValue 属性只会出现字段 field_info 中，表示静态变量的初始值，它的结构如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>ConstantValue_attribute {
+</span></span><span class=line><span class=cl>    u2 attribute_name_index;
+</span></span><span class=line><span class=cl>    u4 attribute_length;
+</span></span><span class=line><span class=cl>    u2 constantvalue_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>其中 attribute_name_index 是指向常量池中值为 &ldquo;ConstantValue&rdquo; 的常量项，ConstantValue 属性的 attribute_length 值恒定为 2，constantvalue_index 指向常量池中具体的常量值索引，根据变量的类型不同 constantvalue_index 指向不同的常量项。</p><p>以 “public static final int DEFAULT_SIZE = 128;” 为例，字段对应的 class 文件如下图高亮部分：</p><p><img src=https://www.guanpj.top//static/boxcnrzZizdz4XgrKQI7exQWeSf.png width=auto alt></p><p>它对应的字段结构如下：</p><p><img src=https://www.guanpj.top//static/boxcnI5pQuvpSf8UwTkp6TOq8xf.png width=auto alt></p><a href=#code-属性><h3 id=code-属性><span class=hanchor arialabel=Anchor># </span>Code 属性</h3></a><p>Code 属性可以说是类文件中最重要的组成部分了，它包含了所有方法的字节码，结构如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>Code_attribute {
+</span></span><span class=line><span class=cl>    u2 attribute_name_index;
+</span></span><span class=line><span class=cl>    u4 attribute_length;
+</span></span><span class=line><span class=cl>    u2 max_stack;
+</span></span><span class=line><span class=cl>    u2 max_locals;
+</span></span><span class=line><span class=cl>    u4 code_length;
+</span></span><span class=line><span class=cl>    u1 code[code_length];
+</span></span><span class=line><span class=cl>    u2 exception_table_length;
+</span></span><span class=line><span class=cl>    {   u2 start_pc;
+</span></span><span class=line><span class=cl>        u2 end_pc;
+</span></span><span class=line><span class=cl>        u2 handler_pc;
+</span></span><span class=line><span class=cl>        u2 catch_type;
+</span></span><span class=line><span class=cl>    } exception_table[exception_table_length];
+</span></span><span class=line><span class=cl>    u2 attributes_count;
+</span></span><span class=line><span class=cl>    attribute_info attributes[attributes_count];
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>Code 属性表的字段含义如下：</p><ul><li>属性名索引（attribute_name_index）占两个字节，指向常量池中 CONSTANT_Utf8_info 常量，表示属性的名字，比如这里对应的常量池的字符串常量"Code"。</li><li>属性长度（attribute_length）占用两个字节，表示属性值大小。</li><li>max_stack 表示操作数栈的最大深度，方法执行的任意期间操作数栈的深度都不会超过这个值。它的计算规则是有入栈的指令 stack 增加，有出栈的指令 stack 减少，在整个过程中 stack 的最大值就是 max_stack 的值，增加和减少的值一般都是 1，但也有例外：LONG 和 DOUBLE 相关的指令入栈 stack 会增加 2，VOID 相关的指令则为 0。</li><li>max_locals 表示局部变量表的大小，它的值并不是等于方法中所有局部变量的数量之和。当一个局部作用域结束，它内部的局部变量占用的位置就可以被接下来的局部变量复用了。</li><li>code_length 和 code 用来表示字节码相关的信息，其中 code_length 表示字节码指令的长度，占用 4 个字节。code 是一个长度为 code_length 的字节数组，存储真正的字节码指令。</li><li>exception_table_length 和 exception_table 用来表示代码内部的异常表信息，如我们熟知的 try-catch 语法就会生成对应的异常表。</li><li>attributes_count 和 attributes[] 用来表示 Code 属性相关的附属属性，Java 虚拟机规定 Code 属性只能包含这四种可选属性：LineNumberTable、LocalVariableTable、LocalVariableTypeTable、StackMapTable。以 LineNumberTable 为例，LineNumberTable 用来存放源码行号和字节码偏移量之间的对应关系，这 LineNumberTable 属于调试信息，不是类文件运行的必需的属性，默认情况下都会生成。如果没有这两个属性，那么在调试时没有办法在源码中设置断点，也没有办法在代码抛出异常的时候在错误堆栈中显示出错的行号信息。</li></ul><p>以下面的代码为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>foo</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>NullPointerException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>IOException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>foo</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>Exception</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>如下图所示：</p><p><img src=https://www.guanpj.top//static/boxcn8Vve3ec7bNJlvplJIhPbSg.png width=auto alt></p><a href=#案例分析-2><h3 id=案例分析-2><span class=hanchor arialabel=Anchor># </span>案例分析</h3></a><p>同样以 ByteCodeDemo 类的字节码为例，如下图所示。</p><p><img src=https://www.guanpj.top//static/boxcnTyhgjV3Q99Kdh9Zn59r0Dc.png width=auto alt></p><p>0001 表示为属性表计数，这里只有一个附加属性。属性表</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>SourceFile_attribute {
+</span></span><span class=line><span class=cl>     u2 attribute_name_index;
+</span></span><span class=line><span class=cl>     u4 attribute_length;
+</span></span><span class=line><span class=cl>     u2 sourcefile_index;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>SourceFile_attribute 一共分为三个部分。</p><p>0014：指向第 20 个常量，为 “SourceFile”，说明这个属性是 Source</p><p>00000002：表示长度为 2</p><p>0015：指向第 21 个常量，即 “ByteCodeDemo.java”</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>

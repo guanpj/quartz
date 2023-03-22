@@ -1,0 +1,475 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="简介 什么是 JVM？ Java 虚拟机（Java Virtual Machine，简称 JVM），它能识别 .class 后缀的字节码文件（Java bytecode），并且能够解析它的指令，最终调用操作系统上的函数以完成指定操作。
+为什么需要 JVM？ Java 程序使用 javac 编译成 .class 文件之后，还需要使用 Java 命令去主动执行它，操作系统并不认识这些 ."><meta property="og:title" content="JVM 内存区域"><meta property="og:description" content="简介 什么是 JVM？ Java 虚拟机（Java Virtual Machine，简称 JVM），它能识别 .class 后缀的字节码文件（Java bytecode），并且能够解析它的指令，最终调用操作系统上的函数以完成指定操作。
+为什么需要 JVM？ Java 程序使用 javac 编译成 .class 文件之后，还需要使用 Java 命令去主动执行它，操作系统并不认识这些 ."><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/JVM-%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content="JVM 内存区域"><meta name=twitter:description content="简介 什么是 JVM？ Java 虚拟机（Java Virtual Machine，简称 JVM），它能识别 .class 后缀的字节码文件（Java bytecode），并且能够解析它的指令，最终调用操作系统上的函数以完成指定操作。
+为什么需要 JVM？ Java 程序使用 javac 编译成 .class 文件之后，还需要使用 Java 命令去主动执行它，操作系统并不认识这些 ."><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>JVM 内存区域</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.9b494647041df398d4e33541c110ab07.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>JVM 内存区域</h1><p class=meta>Last updated
+Mar 22, 2023</p><ul class=tags><li><a href=https://www.guanpj.top/tags/JVM/>Jvm</a></li><li><a href=https://www.guanpj.top/tags/%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F/>内存区域</a></li><li><a href=https://www.guanpj.top/tags/%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80/>内存布局</a></li><li><a href=https://www.guanpj.top/tags/Java/>Java</a></li></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#简介>简介</a><ol><li><a href=#什么是-jvm>什么是 JVM？</a></li><li><a href=#为什么需要-jvm>为什么需要 JVM？</a></li><li><a href=#jvmjre-和-jdk-三者关系>JVM、JRE 和 JDK 三者关系</a></li></ol></li><li><a href=#jvm-运行时数据区>JVM 运行时数据区</a><ol><li><a href=#程序计数器>程序计数器</a></li><li><a href=#虚拟机栈>虚拟机栈</a><ol><li><a href=#虚拟机栈运行的原理>虚拟机栈运行的原理</a></li><li><a href=#局部变量表>局部变量表</a></li><li><a href=#操作数栈>操作数栈</a></li><li><a href=#动态连接>动态连接</a><ol><li><a href=#strong方法调用strong><strong>方法调用</strong></a></li><li><a href=#strong虚方法与非虚方法strong><strong>虚方法与非虚方法</strong></a><ol><li><a href=#普通调用指令>普通调用指令</a></li><li><a href=#动态调用指令>动态调用指令</a></li></ol></li></ol></li><li><a href=#方法出口>方法出口</a></li><li><a href=#本地方法栈>本地方法栈</a></li></ol></li><li><a href=#堆>堆</a></li><li><a href=#方法区>方法区</a><ol><li><a href=#版本演进>版本演进</a></li><li><a href=#采用元空间替代永久代实现方法区的优点>采用元空间替代永久代实现方法区的优点</a></li><li><a href=#方法区中的内容>方法区中的内容</a><ol><li><a href=#strong类型信息strong><strong>类型信息</strong></a></li><li><a href=#strong域field信息strong><strong>域（Field）信息</strong></a></li><li><a href=#strong方法method信息strong><strong>方法（method）信息</strong></a></li><li><a href=#strong静态变量static-变量strong><strong>静态变量（static 变量）</strong></a></li><li><a href=#strong全局常量static-final-变量strong><strong>全局常量（static final 变量）</strong></a></li></ol></li></ol></li><li><a href=#直接内存>直接内存</a></li></ol></li><li><a href=#常量池和-string>常量池和 String</a><ol><li><a href=#常量池概念>常量池概念</a><ol><li><a href=#静态常量池>静态常量池</a></li><li><a href=#运行时常量池>运行时常量池</a></li><li><a href=#字符串常量池>字符串常量池</a><ol><li><a href=#特点>特点</a></li><li><a href=#字符串常量池位置变化>字符串常量池位置变化</a></li></ol></li></ol></li><li><a href=#string>String</a><ol><li><a href=#string-对象的内存分配>String 对象的内存分配</a><ol><li><a href=#通过字面量赋值创建>通过字面量赋值创建</a></li><li><a href=#通过-new-关键字创建>通过 new 关键字创建</a></li><li><a href=#对比>对比</a></li><li><a href=#通过字符串拼接创建>通过字符串拼接创建</a></li></ol></li><li><a href=#stringintern-方法>String.intern() 方法</a><ol><li><a href=#版本区别>版本区别</a></li></ol></li></ol></li></ol></li></ol></nav></details></aside><a href=#简介><h1 id=简介><span class=hanchor arialabel=Anchor># </span>简介</h1></a><a href=#什么是-jvm><h2 id=什么是-jvm><span class=hanchor arialabel=Anchor># </span>什么是 JVM？</h2></a><p>Java 虚拟机（Java Virtual Machine，简称 JVM），它能识别 .class 后缀的字节码文件（Java bytecode），并且能够解析它的指令，最终调用操作系统上的函数以完成指定操作。</p><a href=#为什么需要-jvm><h2 id=为什么需要-jvm><span class=hanchor arialabel=Anchor># </span>为什么需要 JVM？</h2></a><p>Java 程序使用 javac 编译成 .class 文件之后，还需要使用 Java 命令去主动执行它，操作系统并不认识这些 .class 文件，JVM 则充当了翻译官的角色。JVM 屏蔽了与具体操作系统平台相关的信息，使得 Java 程序只需生成在 Java 虚拟机上运行的目标代码（字节码），就可以在多种平台上不加修改地运行。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120503.png width=auto alt></p><p>从图中可以看到，有了 JVM 这个抽象层之后，Java 就可以实现跨平台了。JVM 只需要保证能够正确执行 .class 文件，就可以运行在诸如 Linux、Windows、MacOS 等平台上了。</p><p>JVM 解释的是类似于汇编语言的字节码，需要一个抽象的运行时环境。同时，这个虚拟环境也需要解决字节码加载、自动垃圾回收、并发等一系列问题。JVM 其实是一个规范，定义了 .class 文件的结构、加载机制、数据存储、运行时栈等诸多内容，最常用的 JVM 实现就是 Hotspot。</p><p>一个 Java 程序，首先经过 javac 编译成 .class 文件，然后 JVM 将其加载到 <code>元数据</code> 区，执行引擎将会通过 <code>混合模式</code> 执行这些字节码。执行时，会翻译成操作系统相关的函数。JVM 作为 .class 文件的黑盒存在，输入字节码，调用操作系统函数。
+<img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120537.png width=auto alt></p><a href=#jvmjre-和-jdk-三者关系><h2 id=jvmjre-和-jdk-三者关系><span class=hanchor arialabel=Anchor># </span>JVM、JRE 和 JDK 三者关系</h2></a><p>JVM 只是一个翻译官，它负责把字节码翻译成机器码，但是需要注意，JVM 不会自己生成代码，需要大家编写代码，同时需要很多依赖类库，这个时候就需要用到 JRE。</p><p>JRE 除了包含 JVM 之外，提供了很多的类库（就是我们说的 jar 包，它可以提供一些即插即用的功能，比如读取或者操作文件，连接网络，使用 I/O 等等之类的）这些东西就是 JRE 提供的基础类库。JVM 标准加上实现的一大堆基础类库，就组成了 Java 的运行时环境，也就是我们常说的 JRE（Java Runtime Environment）。有了 JRE 之后，Java 程序便可以运行来了。</p><p>但对于程序员来说，JRE 还不够。还需要编译代码、调试代码、打包代码，有时候还需要反编译代码等等。因此需要使用 JDK，除了 JRE 之外，JDK 还提供了一些非常好用的小工具，比如 javac（编译代码）、java、jar （打包代码）、javap（反编译 &lt; 反汇编 >）等。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120708.png width=auto alt></p><a href=#jvm-运行时数据区><h1 id=jvm-运行时数据区><span class=hanchor arialabel=Anchor># </span>JVM 运行时数据区</h1></a><p>相对于 C 和 C++ 的手动内存管理和复杂难以理解的指针等特性，Java 引以为豪的就是它的自动内存管理机制，这使得 Java 程序写起来方便得多。然而这种呼之即来挥之即去的内存申请和释放方式，自然也有它的代价。为了管理这些快速的内存申请释放操作，就必须引入一个池子来延迟这些内存区域的回收操作。另外，Java 程序的数据结构是非常丰富的，比如有静态成员变量、动态成员变量、区域变量、短小紧凑的对象声明和庞大复杂的内存申请等等。这么多不同的数据结构，到底是在什么地方存储的，它们之间又是怎么进行交互的呢？这就有了内存区域划分的概念，如图：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120716.png width=auto alt></p><p>JVM 内存区域划分如图所示，从图中我们可以看出：</p><ul><li>JVM 堆中的数据是共享的，是占用内存最大的一块区域。</li><li>可以执行字节码的模块叫作执行引擎。</li><li>执行引擎在线程切换时依靠的就是程序计数器来进行恢复。</li><li>JVM 的内存划分与多线程是息息相关的。程序中运行时用到的栈，以及本地方法栈，它们的维度都是线程。</li><li>本地内存包含元数据区和一些直接内存。</li></ul><p><img src=https://www.guanpj.top//static/boxcnFXQjU3d0urFc9C5qGM6ISd.png width=auto alt></p><a href=#程序计数器><h2 id=程序计数器><span class=hanchor arialabel=Anchor># </span>程序计数器</h2></a><p>程序计数器（Program Counter Register）是一块较小的内存空间，由于 JVM 可以并发执行线程，因此会存在线程之间的切换，而这个时候就程序计数器会记录下当前程序执行到的位置，以便在其他线程执行完毕后，恢复现场继续执行。</p><p>JVM 会为每个线程分配一个程序计数器，与线程的生命周期相同。</p><p>如果线程正在执行的是一个 Java 方法，这个计数器记录的是正在执行虚拟机字节码指令的地址。如果正在执行的是 Native 本地方法，计数器的值则为空。</p><p><strong>程序计数器是唯一一个在 Java 虚拟机规范中没有规定任何 OutOfMemoryError 情况的区域。</strong></p><a href=#虚拟机栈><h2 id=虚拟机栈><span class=hanchor arialabel=Anchor># </span>虚拟机栈</h2></a><p>虚拟机栈描述的是 Java 方法执行的内存模型：</p><p>每个方法在执行的同时都会创建一个栈帧（Stack Frame，是方法运行时的基础数据结构）用于存储局部变量表、操作数栈、动态链接、方法出口等信息。每一个方法从调用直至执行完成的过程，就对应着一个栈帧在虚拟机栈中入栈到出栈的过程。</p><p>虚拟机栈是每个线程独有的，随着线程的创建而存在，线程结束而死亡。</p><p>在虚拟机栈内存不够的时候会 OutOfMemoryError，在线程运行中需要更大的虚拟机栈时会出现 StackOverFlowError。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120721.png width=auto alt></p><p>从上图可以看出，虚拟机栈包含很多<strong>栈帧</strong>，每个方法执行的同时会创建一个栈帧，栈帧又存储了方法的局部变量表、操作数栈、动态连接和方法返回地址等信息。</p><a href=#虚拟机栈运行的原理><h3 id=虚拟机栈运行的原理><span class=hanchor arialabel=Anchor># </span>虚拟机栈运行的原理</h3></a><ul><li>JVM 直接对 Java 栈的操作只有两个，就是对栈帧的压栈和出栈，遵循"先进后出"的原则。</li><li>每一次函数调用都会有一个对应的栈帧被压入虚拟机栈中，每一个函数调用结束后，都会有一个栈帧被弹出。</li><li>在一条活动的线程中，一个时间点上，只会有一个数据的栈帧。即只有当前正在执行的方法的栈帧是有效的。这个栈帧称为当前栈帧（Current Frame），与当前栈帧相对应的方法就是当前方法（Current Method），定义这个方法的类就是当前类（Current Class）。</li><li>执行引擎运行的所有字节码指令只针对当前的栈帧进行操作。</li><li>如果该方法调用了其他方法，对应新的栈帧会创建处理，放在栈的顶部，成为新的当前栈。</li><li>不同线程中所包含的栈帧是不允许相互作用的，即不可能在一个栈帧之中引用另外一个线程的栈帧。</li><li>如果当前方法调用了其他方法，方法返回之际，当前栈帧会传回此方法的返回结果给前一个栈帧，接着，虚拟机会丢弃当前栈帧，是的前一个栈帧重新成为当前栈帧。</li><li>Java 方法有两种返回方式：return 语句和抛出异常，不管哪种返回方式都会导致栈帧被弹出。</li></ul><a href=#局部变量表><h3 id=局部变量表><span class=hanchor arialabel=Anchor># </span>局部变量表</h3></a><p>局部变量表主要存放了编译期可知的各种数据类型（boolean、byte、char、short、int、float、long、double）、对象引用（reference 类型，它不同于对象本身，可能是一个指向对象起始地址的引用指针，也可能是指向一个代表对象的句柄或其他与此对象相关的位置）和 returnAdress 类型（指向了一条字节码指令的地址）。</p><a href=#操作数栈><h3 id=操作数栈><span class=hanchor arialabel=Anchor># </span>操作数栈</h3></a><p>主要用于<strong>保存计算过程的中间结果</strong>，同时作为计算过程中<strong>临时的存储空间</strong>。</p><p>当一个方法刚刚开始执行的时候，这个方法的操作数栈是空的，在方法的执行过程中，会有各种字节码指令往操作数栈中写入和提取内容，也就是出栈/入栈操作。</p><p>操作数栈、局部变量表和程序计数器的工作过程：</p><p><img src=https://www.guanpj.top//static/boxcnIP1LPtHC6Df6FWYsQDun3z.png width=auto alt></p><a href=#动态连接><h3 id=动态连接><span class=hanchor arialabel=Anchor># </span>动态连接</h3></a><p>每个栈帧都包含一个指向运行时常量池中该栈帧所属方法的引用。持有这个引用是为了支持方法调用过程中的动态连接（Dynamic Linking）。</p><p>方法调用并不等同于方法执行，方法调用阶段唯一的任务就是确定被调用方法的版本(即调用哪一个方法)，这也是 Java 强大的扩展能力，在运行期间才能确定目标方法的<strong>直接引用</strong>。</p><p>所有<strong>方法调用中的目标方法</strong>在 Class 文件里面都是一个常量池中的符号引用，在类加载的解析阶段，会将其中的一部分符号引用转化为直接引用。</p><p>在 Java 源文件被编译到字节码文件中时，所有的变量和方法引用都作为符号引用（Symbolic Reference）保存在 class 文件的常量池中。比如：描述一个方法调用另外的其他方法时，就是通过常量池中指向方法的引用来表示的，那么动态链接的作用就是为了将这些符号引用转换为调用方法的直接引用。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120904.png width=auto alt></p><p>下面从字节码的角度分析动态连接的过程：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>DynamicLinkingTest</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kt>int</span> <span class=n>num</span> <span class=o>=</span> <span class=n>10</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>methodA</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;methodA...&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>method</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;methodB...&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>methodA</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>num</span><span class=o>++;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>上面代码反编译以后可以看到如下指令：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl> <span class=n>Code</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>stack</span><span class=o>=</span><span class=n>1</span><span class=o>,</span> <span class=n>locals</span><span class=o>=</span><span class=n>1</span><span class=o>,</span> <span class=n>args_size</span><span class=o>=</span><span class=n>1</span>
+</span></span><span class=line><span class=cl>         <span class=n>0</span><span class=o>:</span> <span class=n>aload_0</span>
+</span></span><span class=line><span class=cl>         <span class=n>1</span><span class=o>:</span> <span class=n>invokevirtual</span> <span class=err>#</span><span class=n>2</span>                  <span class=c1>// Method a:()V
+</span></span></span><span class=line><span class=cl><span class=c1></span>         <span class=n>4</span><span class=o>:</span> <span class=k>return</span>
+</span></span></code></pre></td></tr></table></div></div><p>invokevirtual 后面的 #2 符号引用对应的就是运行时常量池中的直接引用。</p><p>#2 对应了方法引用，#3，#17……最终对应到 methodA：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Constant</span> <span class=n>pool</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>   <span class=err>#</span><span class=n>1</span> <span class=o>=</span> <span class=n>Methodref</span>          <span class=err>#</span><span class=n>4</span><span class=o>.</span><span class=err>#</span><span class=n>16</span>         <span class=c1>// java/lang/Object.&#34;&lt;init&gt;&#34;:()V
+</span></span></span><span class=line><span class=cl><span class=c1></span>   <span class=err>#</span><span class=n>2</span> <span class=o>=</span> <span class=n>Methodref</span>          <span class=err>#</span><span class=n>3</span><span class=o>.</span><span class=err>#</span><span class=n>17</span>         <span class=c1>// com/suanfa/jvm/OperandStackTest.a:()V
+</span></span></span><span class=line><span class=cl><span class=c1></span>   <span class=err>#</span><span class=n>3</span> <span class=o>=</span> <span class=n>Class</span>              <span class=err>#</span><span class=n>18</span>            <span class=c1>// com/suanfa/jvm/OperandStackTest
+</span></span></span><span class=line><span class=cl><span class=c1></span>   <span class=err>#</span><span class=n>4</span> <span class=o>=</span> <span class=n>Class</span>              <span class=err>#</span><span class=n>19</span>            <span class=c1>// java/lang/Object
+</span></span></span><span class=line><span class=cl><span class=c1></span>   <span class=err>#</span><span class=n>5</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=o>&lt;</span><span class=n>init</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>   <span class=err>#</span><span class=n>6</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=o>()</span><span class=n>V</span>
+</span></span><span class=line><span class=cl>   <span class=err>#</span><span class=n>7</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>Code</span>
+</span></span><span class=line><span class=cl>   <span class=err>#</span><span class=n>8</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>LineNumberTable</span>
+</span></span><span class=line><span class=cl>   <span class=err>#</span><span class=n>9</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>LocalVariableTable</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>10</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=k>this</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>11</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>Lcom</span><span class=o>/</span><span class=n>suanfa</span><span class=o>/</span><span class=n>jvm</span><span class=o>/</span><span class=n>OperandStackTest</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>12</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>a</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>13</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>b</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>14</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>SourceFile</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>15</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>OperandStackTest</span><span class=o>.</span><span class=na>java</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>16</span> <span class=o>=</span> <span class=n>NameAndType</span>        <span class=err>#</span><span class=n>5</span><span class=o>:</span><span class=err>#</span><span class=n>6</span>          <span class=c1>// &#34;&lt;init&gt;&#34;:()V
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=err>#</span><span class=n>17</span> <span class=o>=</span> <span class=n>NameAndType</span>        <span class=err>#</span><span class=n>12</span><span class=o>:</span><span class=err>#</span><span class=n>6</span>         <span class=c1>// a:()V
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=err>#</span><span class=n>18</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>com</span><span class=o>/</span><span class=n>suanfa</span><span class=o>/</span><span class=n>jvm</span><span class=o>/</span><span class=n>OperandStackTest</span>
+</span></span><span class=line><span class=cl>  <span class=err>#</span><span class=n>19</span> <span class=o>=</span> <span class=n>Utf8</span>               <span class=n>java</span><span class=o>/</span><span class=n>lang</span><span class=o>/</span><span class=n>Object</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#strong方法调用strong><h4 id=strong方法调用strong><span class=hanchor arialabel=Anchor># </span><strong>方法调用</strong></h4></a><p>在 JVM 中，将符号引用转换为调用方法的直接引用与方法的绑定机制有关。</p><ol><li>静态链接、早期绑定：当一个字节码文件别装入 JVM 内部，如果被调用的目标方法在编译器可知，且运行期保持不变时，这种情况下将调用方法的符号引用转换为直接引用的过程称之为静态链接。对应的方法绑定机制为<strong>早期绑定</strong>。</li><li>动态链接、晚期绑定：如果方法被调用的时候在编译期无法确定下来，就是说，只能在运行时将调用方法的符号引用转换为直接引用，引用这种引用转换过程具备动态性，因此称之为动态链接。对应的方法绑定机制为<strong>晚期绑定</strong>。</li></ol><a href=#strong虚方法与非虚方法strong><h4 id=strong虚方法与非虚方法strong><span class=hanchor arialabel=Anchor># </span><strong>虚方法与非虚方法</strong></h4></a><ul><li>如果方法在编译期就确定了具体的调用版本，这个版本在运行时是不可变的。这样的方法称之为非虚方法。</li><li>静态变量、私有方法、final 方法、实例构造器、父类方法都是非虚方法。</li><li>其它方法称之为虚方法。</li></ul><a href=#普通调用指令><h5 id=普通调用指令><span class=hanchor arialabel=Anchor># </span>普通调用指令</h5></a><ul><li>invokestatic ：静态方法，解析阶段确定唯一方法版本</li><li>invokespecial ：调用<code>&lt;init></code>方法、私有方法以及父类方法，解析阶段确定唯一方法版本</li><li>invokevirtual ：调用所有虚方法</li><li>invokeinterface ：调用接口方法</li></ul><a href=#动态调用指令><h5 id=动态调用指令><span class=hanchor arialabel=Anchor># </span>动态调用指令</h5></a><ul><li>invokedynamic ： 动态解析所需要调用的方法，然后执行。invokedynamic 指令是在 Java 7 中增加的，为了实现动态类型语言支持而做的一种改进，但在 Java 7 中并没有提供直接生成的 invokedynamic 指令的方法，需要借助 ASM 这种底层字节码工具才能够生成 invokedynamic 指令。直到 JDK 8 的 Lambda 表达式的出现，invokedynamic 指令在 Java 中才有了直接生成的方式。</li></ul><p>前四条指令固化在虚拟机的内部，方法的调用执行不可人为干预，而 invokedynamic 指令则支持由用户确定版本。其中 invokevirtual 和 invokestatic 指令调用的方法称为非虚方法，其余的（final 修饰除外）称为虚方法。</p><p>下面以具体实例展示以上介绍的各种调用指令：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm> * 解析调用中非虚方法、虚方法的测试
+</span></span></span><span class=line><span class=cl><span class=cm> */</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>Father</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Father</span><span class=o>(){</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Father 默认构造器&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>showStatic</span><span class=o>(</span><span class=n>String</span> <span class=n>s</span><span class=o>){</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Father show static &#34;</span> <span class=o>+</span> <span class=n>s</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>final</span> <span class=kt>void</span> <span class=nf>showFinal</span><span class=o>(){</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Father show final&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>showCommon</span><span class=o>(){</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Father show common&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Son</span> <span class=kd>extends</span> <span class=n>Father</span><span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Son</span><span class=o>(){</span>
+</span></span><span class=line><span class=cl>        <span class=kd>super</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Son</span><span class=o>(</span><span class=kt>int</span> <span class=n>age</span><span class=o>){</span>
+</span></span><span class=line><span class=cl>        <span class=k>this</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>Son</span> <span class=n>son</span> <span class=o>=</span> <span class=k>new</span> <span class=n>Son</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>son</span><span class=o>.</span><span class=na>show</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>//不是重写的父类方法，因为静态方法不能被重写
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>showStatic</span><span class=o>(</span><span class=n>String</span> <span class=n>s</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Son show static &#34;</span> <span class=o>+</span> <span class=n>s</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kt>void</span> <span class=nf>showPrivate</span><span class=o>(</span><span class=n>String</span> <span class=n>s</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Son show private &#34;</span> <span class=o>+</span> <span class=n>s</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>show</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokestatic
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>showStatic</span><span class=o>(</span><span class=s>&#34;大头儿子&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokestatic
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kd>super</span><span class=o>.</span><span class=na>showStatic</span><span class=o>(</span><span class=s>&#34;大头儿子&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokespecial
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>showPrivate</span><span class=o>(</span><span class=s>&#34;hello!&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokespecial
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kd>super</span><span class=o>.</span><span class=na>showCommon</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokevirtual 因为此方法声明有final，不能被子类重写
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>//所以也认为该方法是非虚方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>showFinal</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//虚方法如下
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>//invokevirtual
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>//没有显式加super，被认为是虚方法，因为子类可能重写showCommon
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>showCommon</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>info</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>MethodInterface</span> <span class=n>in</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokeinterface  
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>//不确定接口实现类是哪一个 需要重写
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>in</span><span class=o>.</span><span class=na>methodA</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=c1>//invokedynamic
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>lambda</span><span class=o>(()-&gt;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>          
+</span></span><span class=line><span class=cl>        <span class=o>});</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>info</span><span class=o>(){</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>lambda</span><span class=o>(</span><span class=n>MethodInterface</span> <span class=n>interface</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>methodInterface</span><span class=o>.</span><span class=na>methodA</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>interface</span> <span class=nc>MethodInterface</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>methodA</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#方法出口><h3 id=方法出口><span class=hanchor arialabel=Anchor># </span>方法出口</h3></a><p>指方法返回地址，是存放调用该方法的程序计数器的值。</p><p>方法返回分为正常返回和异常退出。无论何种退出情况，都将返回至方法当前被调用的位置，这样程序才能继续执行。</p><p>本质上，方法的退出就是当前栈帧出栈的过程。此时需要回复上层方法的局部变量表、操作数栈、将返回值压入调用者的栈帧的操作数栈、设置程序计数器的值等，让调用者方法继续执行下去。正常完成出口和异常完成出口的区别在于：通过异常完成出口退出的不会给它的上层调用者产生任何的返回值。</p><a href=#本地方法栈><h3 id=本地方法栈><span class=hanchor arialabel=Anchor># </span>本地方法栈</h3></a><p>Java 虚拟机栈是用来为 Java 方法服务，相应地，本地方法栈则是用来为 native 方法服务的，可以认为是通过 JNI (Java Native Interface) 直接调用本地 C/C++ 库，不受 JVM 控制。需要注意的是，HotSpot 虚拟机直接把本地方法栈和虚拟机栈合二为一了。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120910.png width=auto alt></p><p>本地方法栈也会抛出 StackOverflowError 和 OutOfMemoryError 异常。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_120920.png width=auto alt></p><a href=#堆><h2 id=堆><span class=hanchor arialabel=Anchor># </span>堆</h2></a><p>堆是 JVM 上最大的内存区域，我们申请的<strong>几乎所有的对象</strong>，都是在这里存储的。我们常说的垃圾回收，操作的对象就是堆。</p><p>一个对象创建的时候，决定是堆上分配还是在栈上分配，和两个方面有关：对象的类型和在 Java 类中存在的位置。</p><ul><li>对于普通对象来说，JVM 会首先在堆上创建对象，然后在其他地方使用的其实是它的引用。比如，把这个引用保存在虚拟机栈的局部变量表中。</li><li>对于基本数据类型来说（byte、short、int、long、float、double、char)，有两种情况。由于每个线程拥有一个虚拟机栈，当在方法体内声明了基本数据类型的对象，就会在栈上直接分配。其他情况，则都是在堆上分配。</li></ul><p>堆空间一般是程序启动时，就申请了，但是并不一定会全部使用。</p><p>随着对象的频繁创建，堆空间占用的越来越多，就需要不定期的对不再使用的对象进行回收。这个在 Java 中，就叫作 GC（Garbage Collection）。由于对象的大小不一，在长时间运行后，堆空间会被许多细小的碎片占满，造成空间浪费。所以，仅仅销毁对象是不够的，还需要堆空间整理。</p><p>现在的虚拟机（包括 HotSpot）都是采用分代回收算法。在分代回收的思想中， 把堆分为：新生代 + 老年代 + 永久代（Java 1.8 之前的方法区的实现方式）； 新生代又分为 Eden + From Survivor + To Survivor 区。几乎所有的 Java 对象都在 Eden 区被 new 出来的。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121108.png width=auto alt></p><p>在 Hotspot 中，Eden、 From 和 To 区空间大小默认比例是 8：1：1。</p><p>也可以使用 -XX:SurvivorRatio 调整这个空间比例，比如 -XX:SruvivorRatio=8。</p><a href=#方法区><h2 id=方法区><span class=hanchor arialabel=Anchor># </span>方法区</h2></a><p>方法区（Method Area）与 Java 堆一样，是所有<strong>线程共享</strong>的内存区域。</p><p>方法区用于存储已经被虚拟机加载的类信息（即加载类、接口、枚举、注解时需要的信息，包括版本、field、方法、接口等信息）、final 常量、静态变量、编译器即时编译的代码等。</p><p>方法区逻辑上属于堆的一部分，但是为了与堆进行区分，通常又叫“非堆”。</p><a href=#版本演进><h3 id=版本演进><span class=hanchor arialabel=Anchor># </span>版本演进</h3></a><p>Java 8 之前，许多 Java 程序员都习惯在 HotSpot 虚拟机上开发、部署程序，很多人都更愿意把方法区称呼为“永久代”（Permanent Generation），或者将两者混为一谈。本质上这两者是不等价的，因为仅仅是当时的 HotSpot 虚拟机设计团队把垃圾收集器的分代设计思想扩展到方法区，或者说使用永久代来实现方法区而已，这样使得 Hotspot 的垃圾收集器能够像管理 Java 堆一样管理这部分内存，省去专门为方法区编写内存管理代码的工作。但是对于其他虚拟机（如 JRockit 和 J9）来说是不存在永久代的概念的，因为《Java 虚拟机规范》对方法区的实现要求比较宽松。</p><p>在 Java 6 的时候 Hotspot 开发团队就有放弃永久代，逐步改为采用本地内存来实现方法区的计划了。到了 Java 7，Hotspot 已经把原本放在永久代的字符串常量池、静态变量等移动到堆里；而从 Java 8 开始，则放弃了永久代的概念，改用与 JRockit 和 J9 一样在本地内存中实现的元空间（MetaSpace）来代替，并把之前永久代剩余的内容（运行时常量池和其他类信息等）全部移动到元空间中</p><p>Java 7 之前：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121115.png width=auto alt></p><p>Java 7:</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121121.png width=auto alt></p><p>Java 8 开始：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121132.png width=auto alt></p><a href=#采用元空间替代永久代实现方法区的优点><h3 id=采用元空间替代永久代实现方法区的优点><span class=hanchor arialabel=Anchor># </span>采用元空间替代永久代实现方法区的优点</h3></a><ol><li>字符串存在永久代中，容易出现性能问题和内存溢出。</li><li>类及方法的信息等比较难确定其大小，因此对于永久代的大小指定比较困难，太小容易出现永久代溢出，太大则容易导致老年代溢出。而元空间并不在虚拟机中，而是使用本地内存，因此，默认情况下，元空间的大小仅受本地内存限制。</li><li>永久代会为 GC 带来不必要的复杂度，并且回收效率偏低。</li><li>将 HotSpot 与 JRockit 合二为一。</li></ol><a href=#方法区中的内容><h3 id=方法区中的内容><span class=hanchor arialabel=Anchor># </span>方法区中的内容</h3></a><a href=#strong类型信息strong><h4 id=strong类型信息strong><span class=hanchor arialabel=Anchor># </span><strong>类型信息</strong></h4></a><p>对每个加载的类型（类 class、接口 interface、枚举 enum、注解 annotation），JVM 必须在方法区中存储以下类型信息：</p><ol><li>这个类型的完整有效名称（即包名.类名）</li><li>这个类型直接父类的完整有效名（对于 interface 或是 java. lang.Object，都没有父类）</li><li>这个类型的修饰符（public、 abstract、 final 的某个子集）</li><li>这个类型直接接口的一个延续列表</li></ol><a href=#strong域field信息strong><h4 id=strong域field信息strong><span class=hanchor arialabel=Anchor># </span><strong>域（Field）信息</strong></h4></a><p>JVM 必须在方法区中保存类型的所有域的相关信息以及域的生命顺序。</p><p>域的相关信息包括：域名称、域类型、域修饰符（pubic、private、protected、static、final、volatile、transient 的某个子集）。</p><a href=#strong方法method信息strong><h4 id=strong方法method信息strong><span class=hanchor arialabel=Anchor># </span><strong>方法（method）信息</strong></h4></a><p>JVM 必须保存所有方法的以下信息，同域信息一样包括声明顺序：</p><ol><li>方法名称。</li><li>方法的返回类型（或 void）</li><li>方法参数的数量和类型（按顺序）</li><li>方法的修饰符（public、private、protected、static、final、synchronized、native、abstract 的一个子集）</li><li>方法的字节码（bytecodes）、操作数栈、局部变量表及大小（abstract 和 native 方法除外）</li><li>异常表（abstract 和 native 方法除外），每个异常处理的开始位置、结束位置、代码处理在程序计数器中的偏移地址、被捕获的异常类的常量池索引。</li></ol><a href=#strong静态变量static-变量strong><h4 id=strong静态变量static-变量strong><span class=hanchor arialabel=Anchor># </span><strong>静态变量（static 变量）</strong></h4></a><ol><li>静态变量和类关联在一起，随着类的加载而加载，它们成为类数据在逻辑上的一部分。</li><li>类变量被类的所有实例所共享，即使没有类实例你也可以访问它。</li></ol><a href=#strong全局常量static-final-变量strong><h4 id=strong全局常量static-final-变量strong><span class=hanchor arialabel=Anchor># </span><strong>全局常量（static final 变量）</strong></h4></a><p>与 non-final 的类变量的处理方法则不同，每个全局常量在编译的时候就被分配了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kt>int</span> <span class=n>count</span> <span class=o>=</span> <span class=n>1</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kd>final</span> <span class=kt>int</span> <span class=n>number</span> <span class=o>=</span> <span class=n>2</span><span class=o>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>反编译后就可以看到如下代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kt>int</span> <span class=n>count</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>descriptor</span><span class=o>:</span> <span class=n>I</span>
+</span></span><span class=line><span class=cl>    <span class=n>flags</span><span class=o>:</span> <span class=n>ACC_PUBLIC</span><span class=o>,</span> <span class=n>ACC_STATIC</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>static</span> <span class=kd>final</span> <span class=kt>int</span> <span class=n>number</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>descriptor</span><span class=o>:</span> <span class=n>I</span>
+</span></span><span class=line><span class=cl>    <span class=n>flags</span><span class=o>:</span> <span class=n>ACC_PUBLIC</span><span class=o>,</span> <span class=n>ACC_STATIC</span><span class=o>,</span> <span class=n>ACC_FINAL</span>
+</span></span><span class=line><span class=cl>    <span class=n>ConstantValue</span><span class=o>:</span> <span class=kt>int</span> <span class=n>2</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#直接内存><h2 id=直接内存><span class=hanchor arialabel=Anchor># </span>直接内存</h2></a><p>直接内存并不是虚拟机运行时数据区的一部分，也不是《Java 虚拟机规范》中定义的内存区域。它是处于 Java 堆外的、直接向内存申请的系统内存区间。</p><p>直接内存源自 NIO，通过存在堆外内存的 DirectByteBuffer 操作 Native 本地内存。通常，访问直接内存的速度会优于 Java 堆内存，即读写性能高。因此出于性能考虑，读写频繁的场合可能考虑使用直接内存。因此 Java 的 NIO 库使用直接内存进行数据缓冲器。</p><p>直接内存也可能导致 OOM，由于它处于 Java 堆外，因此它的大小不会直接受限于 -Xmx 指定的最大堆大小，但是系统内存是有限的，Java 堆和直接内存的总和依然受限于操作系统给出的最大内存。可以通过 -XX:MaxDirectMemorySize 设置它的大小，默认与堆的最大值 -Xmx 参数值一致。</p><p>直接内存的缺点是分配回收成本较高、不受 JVM 内存回收管理。</p><a href=#常量池和-string><h1 id=常量池和-string><span class=hanchor arialabel=Anchor># </span>常量池和 String</h1></a><a href=#常量池概念><h2 id=常量池概念><span class=hanchor arialabel=Anchor># </span>常量池概念</h2></a><a href=#静态常量池><h3 id=静态常量池><span class=hanchor arialabel=Anchor># </span>静态常量池</h3></a><p>一个有效的 Class 文件中除了包含了类的版本信息、字段、方法以及接口等描述信息外，还包含一项信息就是<strong>常量池（Constant Pool）</strong>，用于存放编译期生成的各种<strong>字面量（Literal）</strong>和<strong>对类型、域和方法的符号引用（Symbolic References）</strong>。</p><a href=#运行时常量池><h3 id=运行时常量池><span class=hanchor arialabel=Anchor># </span>运行时常量池</h3></a><p>运行时常量池是方法区中的一部分。Class 文件中静态常量池的内容将在类加载后存放到方法区的运行时常量池中。也就是说，每个 Class 都有一个静态常量池，类在解析之后，将符号引用替换成直接引用，与全局常量池中的引用值保持一致。</p><p>运行时常量池相对于 Class 文件常量池的一个重要特征就是它具备动态性。运行期间也可以将新产生的常量放入常量池中，典型的实现方式就是 String 类的 intern() 方法。</p><a href=#字符串常量池><h3 id=字符串常量池><span class=hanchor arialabel=Anchor># </span>字符串常量池</h3></a><p>字符串的分配和其他的对象分配一样，需要耗费高昂的时间和空间为代价，如果需要大量频繁的创建字符串，会极大程度地影响程序的性能，因此 JVM 为了提高性能和减少内存开销引入了字符串常量池的概念。</p><a href=#特点><h4 id=特点><span class=hanchor arialabel=Anchor># </span>特点</h4></a><p>字符串常量池中是不会存储相同的字符串的。</p><p>字符串常量池（String Pool）由 StringTable 类实现，它是一个固定大小的 Hashtable。因此，如果 String Pool 的 String 非常多，就会造成 Hash 冲突严重，从而导致链表会很长，而链表长会直接造成调用 String.intern 时性能大幅度下降。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>StringTable</span> <span class=kd>extends</span> <span class=n>sun</span><span class=o>.</span><span class=na>jvm</span><span class=o>.</span><span class=na>hotspot</span><span class=o>.</span><span class=na>utilities</span><span class=o>.</span><span class=na>Hashtable</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>JDK6、7 中，StringTable 默认是 1009，所以如果常量池中的字符串过多就会导致效率下降很快，此时可以通过参数进行调整。</p><p>JDK8 开始，StringTable 默认是 60013，也可以通过参数进行调整，但限制最小长度不低于 1009。</p><p>StringTable 存储的不是 String 对象的内容，而是一个个 HashtableEntry，HashtableEntry 里面的 value 指向的才是 String 对象一般我们说一个字符串进入了字符串常量池其实是说在这个 StringTable 中保存了对它的引用；反之，如果说没有在其中就是说 StringTable 中没有对它的引用。</p><a href=#字符串常量池位置变化><h4 id=字符串常量池位置变化><span class=hanchor arialabel=Anchor># </span>字符串常量池位置变化</h4></a><p>字符串常量池自 Java 7 开始从永久代移动到堆中。因为永久代的回收频率很低，在 Full GC 的时候才会触发，而 Full GC 是老年代的空间不足、永久代不足时才会触发。这就导致了 StringTable 回收效率不高。而开发中会有大量的字符串被创建，回收效率低，导致永久代内存不足。因此，只有放到堆里才能及时回收这部分内存。</p><a href=#string><h2 id=string><span class=hanchor arialabel=Anchor># </span>String</h2></a><p>无论是服务端还是 Android 客户端开发，String 对象无疑是用得最多的数据类型之一，String 类的代码简化后有如下内容：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>final</span> <span class=kd>class</span> <span class=nc>String</span>
+</span></span><span class=line><span class=cl>    <span class=kd>implements</span> <span class=n>java</span><span class=o>.</span><span class=na>io</span><span class=o>.</span><span class=na>Serializable</span><span class=o>,</span> <span class=n>Comparable</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;,</span> <span class=n>CharSequence</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=cm>/** The value is used for character storage. */</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>char</span> <span class=n>value</span><span class=o>[];</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=cm>/** Cache the hash code for the string */</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kt>int</span> <span class=n>hash</span><span class=o>;</span> <span class=c1>// Default to 0
+</span></span></span><span class=line><span class=cl><span class=c1></span>    
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>实际上，value[] 数组才是真正存放字符串的容器。</p><a href=#string-对象的内存分配><h3 id=string-对象的内存分配><span class=hanchor arialabel=Anchor># </span>String 对象的内存分配</h3></a><p>以下使用 String 对象最常用的两种方式，下面进行深入分析。</p><a href=#通过字面量赋值创建><h4 id=通过字面量赋值创建><span class=hanchor arialabel=Anchor># </span>通过字面量赋值创建</h4></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s</span> <span class=o>=</span> <span class=s>&#34;xyz&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=o>...</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>这段代码执行后（假如 main 线程还存活），内存布局如下：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121313png width=auto alt></p><p>执行 String s = &ldquo;xyz&rdquo; 时，首先会在字符串常量池中查找（遍历 StringTable 逐个获取 HashtableEntry 对象，判断 HashtableEntry 的 value 是否 equals(&ldquo;xyz&rdquo;)），看能不能找到“xyz”<strong>字符串的引用</strong>，如果字符串常量池中找不到这个引用，则：</p><ol><li>创建一个 String 对象和 char 数组对象；</li><li>将创建的 String 对象封装成 HashtableEntry，作为 StringTable 的 value 进行存储；</li><li>返回创建的 String 对象。</li></ol><p>如果能找到这个引用：</p><ul><li>直接返回找到引用对应的 String 对象。</li></ul><a href=#通过-new-关键字创建><h4 id=通过-new-关键字创建><span class=hanchor arialabel=Anchor># </span>通过 new 关键字创建</h4></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s</span> <span class=o>=</span> <span class=k>new</span> <span class=n>String</span><span class=o>(</span><span class=s>&#34;xyz&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>...</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>这段代码执行后（假如 main 线程还存活），内存布局如下：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121321.png width=auto alt></p><p>执行 String s = new String(&ldquo;xyz&rdquo;) 时，首先会在字符串常量池中查找，看能不能找到“xyz”<strong>字符串对应对象的引用</strong>，如果字符串常量池中找不到这个引用，则：</p><ol><li>创建一个 String 对象和 char 数组对象；</li><li>将创建的 String 对象封装成 HashtableEntry，作为 StringTable 的 value 进行存储；</li><li>new String(&ldquo;xyz&rdquo;) 会在堆区又创建一个 String 对象，char 数组直接指向创建好的 char 数组对象。</li></ol><p>如果能找到这个引用：</p><ul><li>new String(&ldquo;xyz&rdquo;) 会在堆区创建一个对象，char 数组直接指向已经存在的 char 数组对象。</li></ul><a href=#对比><h4 id=对比><span class=hanchor arialabel=Anchor># </span>对比</h4></a><p>对于 String s = &ldquo;xyz&rdquo; 这种形式创建字符串对象，如果字符串常量池中能找到，不会创建 String 对象；如果如果字符串常量池中找不到，创建一个 String 对象。</p><p>对于 String s = new String(&ldquo;xyz&rdquo;) 这种形式创建字符串对象，如果字符串常量池中能找到，创建一个 String 对象；如果如果字符串常量池中找不到，创建两个 String 对象。</p><p>所以，在日常开发中，能用 String s = &ldquo;xyz&rdquo; 尽量不用 String s = new String(&ldquo;xyz&rdquo;)，因为可以少创建一个对象，节省一部分空间。</p><p>事实上，运行程序用到 Test 类的时候，Test.class 文件的信息会被解析到内存的方法区里，例子中的“xyz”作为字面量，它的一个引用会被存到在堆中的字符串常量池里。而“xyz”本体还是和所有对象一样，创建在堆中的 Eden 区，但因为一直有一个引用驻留在字符串常量池，所以不会被 GC 清理掉。这个对象“xyz”会生存到整个线程结束。主线程中的 s 变量这时候都还没有被创建，但“xyz”的实例已经在堆里了，对它的引用也已经在字符串常量池里了。</p><p>有了前面的基础，再来分析下面代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s1</span> <span class=o>=</span> <span class=k>new</span> <span class=n>String</span><span class=o>(</span><span class=s>&#34;xyz&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s2</span> <span class=o>=</span> <span class=s>&#34;xyz&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>s1</span> <span class=o>==</span> <span class=n>s2</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>s1</span><span class=o>.</span><span class=na>equals</span><span class=o>(</span><span class=n>s2</span><span class=o>));</span>
+</span></span><span class=line><span class=cl>        <span class=o>...</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=kc>true</span>
+</span></span></code></pre></td></tr></table></div></div><p>这段代码执行后（假如 main 线程还存活），内存布局如下：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121328.png width=auto alt></p><p>很明显，s1 和 s2 指向的是不同的对象。而 equals 方法比较的真正的 char 数据，并且从图中可以看出 s1 和 s2 最终指向的都是同一个 char 数组对象，所以 s1.equals(s2) 等于 true。关于它们是否指向同一个数组，下图也可以证实：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121334.png width=auto alt></p><a href=#通过字符串拼接创建><h4 id=通过字符串拼接创建><span class=hanchor arialabel=Anchor># </span>通过字符串拼接创建</h4></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Test</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s1</span> <span class=o>=</span> <span class=s>&#34;aa&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>s2</span> <span class=o>=</span> <span class=s>&#34;bb&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>str0</span> <span class=o>=</span> <span class=k>new</span> <span class=n>String</span><span class=o>(</span><span class=s>&#34;aa&#34;</span><span class=o>)</span> <span class=o>+</span> <span class=k>new</span> <span class=n>String</span><span class=o>(</span><span class=s>&#34;bb&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>str1</span> <span class=o>=</span> <span class=n>s1</span> <span class=o>+</span> <span class=n>s2</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>str2</span> <span class=o>=</span> <span class=s>&#34;aabb&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>str3</span> <span class=o>=</span> <span class=s>&#34;aa&#34;</span> <span class=o>+</span> <span class=s>&#34;bb&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>str0</span> <span class=o>==</span> <span class=n>str1</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>str1</span> <span class=o>==</span> <span class=n>str2</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>str2</span> <span class=o>==</span> <span class=n>str3</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>...</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=kc>true</span>
+</span></span></code></pre></td></tr></table></div></div><p>首先，对于 str3 来说，编译期会优化成 “aabb”，因此只有它与 str2 是同一个对象。</p><p>对于 str0 和 str1 来说，会被编译器会优化成 new StringBuilder().append(&ldquo;aa&rdquo;).append(&ldquo;bb&rdquo;).toString();</p><p>StringBuilder 里面的 append 方法就是对 char 数组进行操作，查看 StringBuilder 的 toString 方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>abstract</span> <span class=kd>class</span> <span class=nc>AbstractStringBuilder</span> <span class=kd>implements</span> <span class=n>Appendable</span><span class=o>,</span> <span class=n>CharSequence</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm>     * The value is used for character storage.
+</span></span></span><span class=line><span class=cl><span class=cm>     */</span>
+</span></span><span class=line><span class=cl>    <span class=kt>char</span><span class=o>[]</span> <span class=n>value</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@Override</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Create a copy, don&#39;t share the array
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>return</span> <span class=k>new</span> <span class=n>String</span><span class=o>(</span><span class=n>value</span><span class=o>,</span> <span class=n>0</span><span class=o>,</span> <span class=n>count</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>再看 String 的这个构造方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=nf>String</span><span class=o>(</span><span class=kt>char</span> <span class=n>value</span><span class=o>[],</span> <span class=kt>int</span> <span class=n>offset</span><span class=o>,</span> <span class=kt>int</span> <span class=n>count</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>(</span><span class=n>offset</span> <span class=o>&lt;</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>throw</span> <span class=k>new</span> <span class=n>StringIndexOutOfBoundsException</span><span class=o>(</span><span class=n>offset</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>(</span><span class=n>count</span> <span class=o>&lt;=</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>count</span> <span class=o>&lt;</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>throw</span> <span class=k>new</span> <span class=n>StringIndexOutOfBoundsException</span><span class=o>(</span><span class=n>count</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>offset</span> <span class=o>&lt;=</span> <span class=n>value</span><span class=o>.</span><span class=na>length</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>this</span><span class=o>.</span><span class=na>value</span> <span class=o>=</span> <span class=s>&#34;&#34;</span><span class=o>.</span><span class=na>value</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Note: offset or count might be near -1&gt;&gt;&gt;1.
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>if</span> <span class=o>(</span><span class=n>offset</span> <span class=o>&gt;</span> <span class=n>value</span><span class=o>.</span><span class=na>length</span> <span class=o>-</span> <span class=n>count</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>throw</span> <span class=k>new</span> <span class=n>StringIndexOutOfBoundsException</span><span class=o>(</span><span class=n>offset</span> <span class=o>+</span> <span class=n>count</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=o>.</span><span class=na>value</span> <span class=o>=</span> <span class=n>Arrays</span><span class=o>.</span><span class=na>copyOfRange</span><span class=o>(</span><span class=n>value</span><span class=o>,</span> <span class=n>offset</span><span class=o>,</span> <span class=n>offset</span><span class=o>+</span><span class=n>count</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>它关键做了如下操作：</p><ul><li>根据参数<strong>复制一份</strong> char 数组对象。</li><li>创建一个 String 对象，String 对象的 value 指向复制的 char 数组对象。</li></ul><p>也就是说 str1 指向的 String 对象的 value 值直接指向了一个已经存在的数组，而且没有驻留到字符串常量池，而 str2 指向的对象驻留到字符串常量池里面去了。</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121345.png width=auto alt></p><p>因此 str0、str1 和 str2 都是指向不同的对象，并且分别指向不同的 char 数组对象。下图再次验证：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121351.png width=auto alt></p><a href=#stringintern-方法><h3 id=stringintern-方法><span class=hanchor arialabel=Anchor># </span>String.intern() 方法</h3></a><p>上面说到，调用 StringBuilder 的 toString 方法创建的 String 对象是不会驻留到字符串常量池的，那还有没有办法将这个对象驻留到字符串常量池呢？有的，这就是 String.intern 方法的作用。</p><p>以这段代码为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>String</span> <span class=n>s1</span> <span class=o>=</span> <span class=s>&#34;aa&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=n>String</span> <span class=n>s2</span> <span class=o>=</span> <span class=s>&#34;bb&#34;</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=n>String</span> <span class=n>str</span> <span class=o>=</span> <span class=n>s1</span> <span class=o>+</span> <span class=n>s2</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=n>str</span><span class=o>.</span><span class=na>intern</span><span class=o>();</span>
+</span></span></code></pre></td></tr></table></div></div><p>在执行 str.intern() 之前，内存布局如下：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121400.png width=auto alt></p><p>在执行 str.intern();之后，内存布局如下：</p><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/JVM-Memory/clipboard_20230323_121406.png width=auto alt></p><p>intern 方法就是创建了一个 HashtableEntry 对象，并把 value 指向 String 对象，然后把 HashtableEntry 通过 hash 定位存到对应的字符串成常量池中。当然，前提是字符串常量池中原来没有对应的 HashtableEntry。如果字符串常量池中已经有对应的 HashtableEntry，则返回 HashtableEntry 的 value，即它所对应 String 对象的地址。</p><a href=#版本区别><h4 id=版本区别><span class=hanchor arialabel=Anchor># </span>版本区别</h4></a><p>JDK6 中，将字符串对象尝试放入字符串常量池中：</p><p>如果字符串常量池中有，则不会放入，并返回已有的字符串常量池中的对象。</p><p>如果没有，会把此对象复制一份，返回字符串池常量池，并返回字符串常量池的地址。</p><p>JDK7 开始，将字符串对象尝试放入字符串池常量池中：</p><p>如果字符串常量池中有，则不会放入，并返回已有的字符串常量池中的对象。</p><p>如果没有，会把对象的引用地址复制一份，放入字符串常量池中，并返回字符串常量池中的引用地址。</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li><a href=/ data-ctx="JVM 内存区域" data-src=/ class=internal-link>AboutTheGardens</a></li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>

@@ -1,0 +1,376 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="注解是什么？有何作用？ Java 注解（Annotation）又称 Java 标注，是 JDK1.5 引入的一种注释机制。是元数据的一种形式，提供有关于程序但不属于程序本身的数据。注解对它们注解的代码的操作没有直接影响。
+注解本身没有任何意义，单独的注解就是一种注释，他需要结合其他如反射、插桩等技术才有意义。
+元注解 在 JDK 中提供了 4 个标准的用来对注解类型进行注解的注解类，我们称之为 meta-annotation（元注解），他们分别是：
+@Target Target 注解的作用是：描述注解的使用范围(即被修饰的注解可以用在什么地方).
+Target 注解用来说明那些被它所注解的注解类可修饰的对象范围：注解可以用于修饰 packages、types（类、接口、枚举、注解类）、类成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch 参数），在定义注解类时使用了 @Target 能够更加清晰的知道它能够被用来修饰哪些对象，它的取值范围定义在 ElementType 枚举中."><meta property="og:title" content="注解和反射"><meta property="og:description" content="注解是什么？有何作用？ Java 注解（Annotation）又称 Java 标注，是 JDK1.5 引入的一种注释机制。是元数据的一种形式，提供有关于程序但不属于程序本身的数据。注解对它们注解的代码的操作没有直接影响。
+注解本身没有任何意义，单独的注解就是一种注释，他需要结合其他如反射、插桩等技术才有意义。
+元注解 在 JDK 中提供了 4 个标准的用来对注解类型进行注解的注解类，我们称之为 meta-annotation（元注解），他们分别是：
+@Target Target 注解的作用是：描述注解的使用范围(即被修饰的注解可以用在什么地方).
+Target 注解用来说明那些被它所注解的注解类可修饰的对象范围：注解可以用于修饰 packages、types（类、接口、枚举、注解类）、类成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch 参数），在定义注解类时使用了 @Target 能够更加清晰的知道它能够被用来修饰哪些对象，它的取值范围定义在 ElementType 枚举中."><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/%E6%B3%A8%E8%A7%A3%E5%92%8C%E5%8F%8D%E5%B0%84/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content="注解和反射"><meta name=twitter:description content="注解是什么？有何作用？ Java 注解（Annotation）又称 Java 标注，是 JDK1.5 引入的一种注释机制。是元数据的一种形式，提供有关于程序但不属于程序本身的数据。注解对它们注解的代码的操作没有直接影响。
+注解本身没有任何意义，单独的注解就是一种注释，他需要结合其他如反射、插桩等技术才有意义。
+元注解 在 JDK 中提供了 4 个标准的用来对注解类型进行注解的注解类，我们称之为 meta-annotation（元注解），他们分别是：
+@Target Target 注解的作用是：描述注解的使用范围(即被修饰的注解可以用在什么地方).
+Target 注解用来说明那些被它所注解的注解类可修饰的对象范围：注解可以用于修饰 packages、types（类、接口、枚举、注解类）、类成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch 参数），在定义注解类时使用了 @Target 能够更加清晰的知道它能够被用来修饰哪些对象，它的取值范围定义在 ElementType 枚举中."><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>注解和反射</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.9b494647041df398d4e33541c110ab07.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>注解和反射</h1><p class=meta>Last updated
+Mar 22, 2023</p><ul class=tags><li><a href=https://www.guanpj.top/tags/%E6%B3%A8%E8%A7%A3/>注解</a></li><li><a href=https://www.guanpj.top/tags/%E5%8F%8D%E5%B0%84/>反射</a></li><li><a href=https://www.guanpj.top/tags/Java/>Java</a></li></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#strong注解是什么有何作用strong><strong>注解是什么？有何作用？</strong></a></li><li><a href=#strong元注解strong><strong>元注解</strong></a><ol><li><ol><li><ol><li><a href=#strongtargetstrong><strong>@Target</strong></a></li><li><a href=#strongretentionstrong><strong>@Retention</strong></a></li><li><a href=#strongdocumentedstrong><strong>@Documented</strong></a></li><li><a href=#stronginheritedstrong><strong>@Inherited</strong></a></li></ol></li></ol></li></ol></li><li><a href=#strong反射是什么有何作用strong><strong>反射是什么？有何作用？</strong></a></li><li><a href=#class-类>Class 类</a><ol><li><ol><li><a href=#获取-class-的方式>获取 Class 的方式</a><ol><li><a href=#通过类名获取>通过类名获取</a></li><li><a href=#通过对象获取>通过对象获取</a></li><li><a href=#通过全类名获取>通过全类名获取</a></li></ol></li><li><a href=#使用-class-创建实例>使用 Class 创建实例</a><ol><li><a href=#直接调用-newinstance>直接调用 newInstance()</a></li><li><a href=#通过-constructor-调用-newinstance>通过 Constructor 调用 newInstance()</a></li></ol></li><li><a href=#获取构造方法>获取构造方法</a></li><li><a href=#获取成员变量字段信息>获取成员变量（字段）信息</a></li><li><a href=#调用方法>调用方法</a></li></ol></li></ol></li><li><a href=#获取泛型的真实类型>获取泛型的真实类型</a><ol><li><ol><li><ol><li><a href=#typevariable>TypeVariable</a></li><li><a href=#parameterizedtype>ParameterizedType</a></li><li><a href=#genericarraytype>GenericArrayType</a></li></ol></li></ol></li></ol></li></ol></nav></details></aside><a href=#strong注解是什么有何作用strong><h1 id=strong注解是什么有何作用strong><span class=hanchor arialabel=Anchor># </span><strong>注解是什么？有何作用？</strong></h1></a><p>Java 注解（Annotation）又称 Java 标注，是 JDK1.5 引入的一种注释机制。是元数据的一种形式，提供有关于程序但不属于程序本身的数据。注解对它们注解的代码的操作没有直接影响。</p><p>注解本身没有任何意义，单独的注解就是一种注释，他需要结合其他如反射、插桩等技术才有意义。</p><a href=#strong元注解strong><h1 id=strong元注解strong><span class=hanchor arialabel=Anchor># </span><strong>元注解</strong></h1></a><p>在 JDK 中提供了 4 个标准的用来对注解类型进行注解的注解类，我们称之为 meta-annotation（元注解），他们分别是：</p><a href=#strongtargetstrong><h4 id=strongtargetstrong><span class=hanchor arialabel=Anchor># </span><strong>@Target</strong></h4></a><p>Target 注解的作用是：描述注解的使用范围(即被修饰的注解可以用在什么地方).</p><p>Target 注解用来说明那些被它所注解的注解类可修饰的对象范围：注解可以用于修饰 packages、types（类、接口、枚举、注解类）、类成员（方法、构造方法、成员变量、枚举值）、方法参数和本地变量（如循环变量、catch 参数），在定义注解类时使用了 @Target 能够更加清晰的知道它能够被用来修饰哪些对象，它的取值范围定义在 ElementType 枚举中.</p><p>源码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=nd>@Documented</span> 
+</span></span><span class=line><span class=cl><span class=nd>@Retention</span><span class=o>(</span><span class=n>RetentionPolicy</span><span class=o>.</span><span class=na>RUNTIME</span><span class=o>)</span> <span class=nd>@Target</span><span class=o>(</span><span class=n>ElementType</span><span class=o>.</span><span class=na>ANNOTATION_TYPE</span><span class=o>)</span> 
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=nd>@interface</span> <span class=n>Target</span> <span class=o>{</span> 
+</span></span><span class=line><span class=cl>  <span class=n>ElementType</span><span class=o>[]</span> <span class=nf>value</span><span class=o>();</span> 
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=n>ElementType定义</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>enum</span> <span class=n>ElementType</span> <span class=o>{</span> 
+</span></span><span class=line><span class=cl>  <span class=n>TYPE</span><span class=o>,</span> <span class=c1>// 类、接口、枚举类 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>FIELD</span><span class=o>,</span> <span class=c1>// 成员变量（包括：枚举常量） 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>METHOD</span><span class=o>,</span> <span class=c1>// 成员方法 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>PARAMETER</span><span class=o>,</span> <span class=c1>// 方法参数 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>CONSTRUCTOR</span><span class=o>,</span> <span class=c1>// 构造方法 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>LOCAL_VARIABLE</span><span class=o>,</span> <span class=c1>// 局部变量 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>ANNOTATION_TYPE</span><span class=o>,</span> <span class=c1>// 注解类 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>PACKAGE</span><span class=o>,</span> <span class=c1>// 可用于修饰：包 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>TYPE_PARAMETER</span><span class=o>,</span> <span class=c1>// 类型参数，JDK 1.8 新增 
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>TYPE_USE</span> <span class=c1>// 使用类型的任何地方，JDK 1.8 新增 
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#strongretentionstrong><h4 id=strongretentionstrong><span class=hanchor arialabel=Anchor># </span><strong>@Retention</strong></h4></a><p>Reteniton 注解的作用是：描述注解保留的时间范围(即：被描述的注解在它所修饰的类中可以被保留到何时).</p><p>Reteniton 注解用来限定那些被它所注解的注解类在注解到其他类上以后，可被保留到何时，一共有三种策略，定义在 RetentionPolicy 枚举中.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>enum</span> <span class=n>RetentionPolicy</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>SOURCE</span><span class=o>,</span>    <span class=c1>// 只会在源文件中保留，随后会被编译器忽略
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>CLASS</span><span class=o>,</span>     <span class=c1>// 保留至编译期，会被 JVM 忽略，默认值
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>RUNTIME</span>    <span class=c1>// 保留至运行时，可通过反射去获取注解信息
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>使用场景：
+<img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/Annotation%26Reflection/clipboard_20230322_115319.png width=auto alt></p><a href=#strongdocumentedstrong><h4 id=strongdocumentedstrong><span class=hanchor arialabel=Anchor># </span><strong>@Documented</strong></h4></a><p>描述在使用 javadoc 工具为类生成帮助文档时是否要保留其注解信息。</p><a href=#stronginheritedstrong><h4 id=stronginheritedstrong><span class=hanchor arialabel=Anchor># </span><strong>@Inherited</strong></h4></a><p>使被它修饰的注解具有继承性（如果某个类使用了被 @Inherited 修饰的注解，则其子类将自动具有该注解）。</p><a href=#strong反射是什么有何作用strong><h1 id=strong反射是什么有何作用strong><span class=hanchor arialabel=Anchor># </span><strong>反射是什么？有何作用？</strong></h1></a><p>一般情况下，我们使用某个类时必定知道它是什么类，是用来做什么的，并且能够获得此类的引用。于是我们直接对这个类进行实例化，之后使用这个类对象进行操作。</p><p>如果一开始并不知道我要初始化的类对象是什么，自然也无法使用 new 关键字来创建对象了。这时候，我们使用 JDK 提供的反射 API 进行反射调用。反射就是在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法；对于任意一个对象，都能够调用它的任意方法和属性；并且都能改变它的属性。这也是 Java 被视为动态语言的关键。</p><p>Java 反射机制主要提供了以下功能：</p><ul><li>在运行时构造任意一个类的对象</li><li>在运行时获取或者修改任意一个类所具有的成员变量和方法</li><li>在运行时调用任意一个对象的方法（属性）</li></ul><a href=#class-类><h1 id=class-类><span class=hanchor arialabel=Anchor># </span>Class 类</h1></a><p>反射始于 Class，<strong>Class 是一个类，封装了当前对象所对应的类的信息。</strong>一个类中有属性，方法，构造器等，比如说有一个 Person 类，一个 Order 类，一个 Book 类，这些都是不同的类，现在需要一个类，用来描述类，这就是 Class，它应该有类名，属性，方法，构造器等。Class 是用来描述类的类。</p><p>Class 类是一个对象照镜子的结果，对象可以看到自己有哪些属性，方法，构造器，实现了哪些接口等等。对于每 个类而言，JRE 都为其保留一个不变的 Class 类型的对象。一个 Class 对象包含了特定某个类的有关信息。 对象只能由系统建立对象，一个类（而不是一个对象）在 JVM 中只会有一个 Class 实例。 </p><a href=#获取-class-的方式><h3 id=获取-class-的方式><span class=hanchor arialabel=Anchor># </span>获取 Class 的方式</h3></a><a href=#通过类名获取><h4 id=通过类名获取><span class=hanchor arialabel=Anchor># </span>通过类名获取</h4></a><p>通过调用“类名.class”即可获取该类的 Class 对象</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>klass</span> <span class=o>=</span> <span class=kt>int</span><span class=o>.</span><span class=na>class</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>classInt</span> <span class=o>=</span> <span class=n>Integer</span><span class=o>.</span><span class=na>TYPE</span><span class=o>;</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#通过对象获取><h4 id=通过对象获取><span class=hanchor arialabel=Anchor># </span>通过对象获取</h4></a><p>获取到对象实例后，通过“对象名.getClass()”或者“对象名.getSuperClass”即可获取该类或者父类的 Class 对象。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>StringBuilder</span> <span class=n>str</span> <span class=o>=</span> <span class=k>new</span> <span class=n>StringBuilder</span><span class=o>(</span><span class=s>&#34;abc&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>klass</span> <span class=o>=</span> <span class=n>str</span><span class=o>.</span><span class=na>getClass</span><span class=o>();</span> 
+</span></span></code></pre></td></tr></table></div></div><a href=#通过全类名获取><h4 id=通过全类名获取><span class=hanchor arialabel=Anchor># </span>通过全类名获取</h4></a><p>使用 Class.forName(全类名) 或者 classLoader.loadClass(全类名) 也可以得到 Class 对象。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Class</span><span class=o>.</span><span class=na>forName</span><span class=o>(</span><span class=s>&#34;android.content.Intent&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=n>getClassLoader</span><span class=o>().</span><span class=na>loadClass</span><span class=o>(</span><span class=s>&#34;android.content.Intent&#34;</span><span class=o>);</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#使用-class-创建实例><h3 id=使用-class-创建实例><span class=hanchor arialabel=Anchor># </span>使用 Class 创建实例</h3></a><p>通过反射来生成对象主要有两种方式。</p><a href=#直接调用-newinstance><h4 id=直接调用-newinstance><span class=hanchor arialabel=Anchor># </span>直接调用 newInstance()</h4></a><p>使用 Class 对象的 newInstance() 方法来创建 Class 对象对应类的实例。 </p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>c</span> <span class=o>=</span> <span class=n>String</span><span class=o>.</span><span class=na>class</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=n>Object</span> <span class=n>str</span> <span class=o>=</span> <span class=n>c</span><span class=o>.</span><span class=na>newInstance</span><span class=o>();</span> 
+</span></span></code></pre></td></tr></table></div></div><a href=#通过-constructor-调用-newinstance><h4 id=通过-constructor-调用-newinstance><span class=hanchor arialabel=Anchor># </span>通过 Constructor 调用 newInstance()</h4></a><p>如果需要通过某个构造方法创建对象，则须通过 Class 对象获取指定的 Constructor 对象，再调用 Constructor 对象的 newInstance() 方法来创建实例。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Class</span><span class=o>&lt;?&gt;</span> <span class=n>c</span> <span class=o>=</span> <span class=n>String</span><span class=o>.</span><span class=na>class</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=c1>//获取String类带一个String参数的构造器
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Constructor</span> <span class=n>constructor</span> <span class=o>=</span> <span class=n>c</span><span class=o>.</span><span class=na>getConstructor</span><span class=o>(</span><span class=n>String</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=c1>//根据构造器创建实例
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Object</span> <span class=n>obj</span> <span class=o>=</span> <span class=n>constructor</span><span class=o>.</span><span class=na>newInstance</span><span class=o>(</span><span class=s>&#34;abc&#34;</span><span class=o>);</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#获取构造方法><h3 id=获取构造方法><span class=hanchor arialabel=Anchor># </span>获取构造方法</h3></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=c1>//获得使用特殊的参数类型的public构造函数(包括父类）
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Constructor</span> <span class=nf>getConstructor</span><span class=o>(</span><span class=n>Class</span><span class=o>[]</span> <span class=n>params</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类的所有公共构造函数
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Constructor</span><span class=o>[]</span> <span class=nf>getConstructors</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=n>获得使用特定参数类型的构造函数</span><span class=o>(</span><span class=n>包括私有</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=n>Constructor</span> <span class=nf>getDeclaredConstructor</span><span class=o>(</span><span class=n>Class</span><span class=o>[]</span> <span class=n>params</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类的所有构造函数(与接入级别无关) 
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Constructor</span><span class=o>[]</span> <span class=nf>getDeclaredConstructors</span><span class=o>()</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#获取成员变量字段信息><h3 id=获取成员变量字段信息><span class=hanchor arialabel=Anchor># </span>获取成员变量（字段）信息</h3></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=c1>//获得命名的公共字段
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Field</span> <span class=nf>getField</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类的所有公共字段
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Field</span><span class=o>[]</span> <span class=nf>getFields</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类声明的命名的字段
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Field</span> <span class=nf>getDeclaredField</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类声明的所有字段
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Field</span><span class=o>[]</span> <span class=nf>getDeclaredFields</span><span class=o>()</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#调用方法><h3 id=调用方法><span class=hanchor arialabel=Anchor># </span>调用方法</h3></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=c1>//使用特定的参数类型，获得命名的公共方法
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Method</span> <span class=nf>getMethod</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>,</span> <span class=n>Class</span><span class=o>[]</span> <span class=n>params</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类的所有公共方法
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Method</span><span class=o>[]</span> <span class=nf>getMethods</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=c1>//使用特写的参数类型，获得类声明的命名的方法
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Method</span> <span class=nf>getDeclaredMethod</span><span class=o>(</span><span class=n>String</span> <span class=n>name</span><span class=o>,</span> <span class=n>Class</span><span class=o>[]</span> <span class=n>params</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>//获得类声明的所有方法 
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Method</span><span class=o>[]</span> <span class=nf>getDeclaredMethods</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=n>获取到</span> <span class=n>Method</span> <span class=n>对象后</span><span class=err>，</span><span class=n>调用</span> <span class=n>invoke</span> <span class=n>方法即可调用该方法</span><span class=err>，</span><span class=n>invoke</span> <span class=n>方法定义</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=n>Object</span> <span class=nf>invoke</span><span class=o>(</span><span class=n>Object</span> <span class=n>obj</span><span class=o>,</span> <span class=n>Object</span><span class=o>...</span> <span class=n>args</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#获取泛型的真实类型><h1 id=获取泛型的真实类型><span class=hanchor arialabel=Anchor># </span>获取泛型的真实类型</h1></a><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/Annotation%26Reflection/clipboard_20230322_115426.png width=auto alt></p><p>当我们对一个泛型类进行反射时，需要的到泛型中的真实数据类型，来完成如 json 反序列化的操作。此时需要通过 Type 体系来完成。Type 接口包含了一个实现类(Class)和四个实现接口，他们分别是：</p><a href=#typevariable><h4 id=typevariable><span class=hanchor arialabel=Anchor># </span>TypeVariable</h4></a><p>泛型类型变量。可以泛型上下限等信息；</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>class</span> <span class=nc>TestType</span><span class=o>&lt;</span><span class=n>K</span> <span class=kd>extends</span> <span class=n>Comparable</span> <span class=o>&amp;</span> <span class=n>Serializable</span><span class=o>,</span> <span class=n>V</span><span class=o>&gt;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>K</span> <span class=n>key</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>V</span> <span class=n>value</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@Test</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// 获取字段的类型
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>Field</span> <span class=n>fk</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>Field</span> <span class=n>fv</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>fk</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;key&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=n>fv</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;value&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>NoSuchFieldException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>TypeVariable</span> <span class=n>keyType</span> <span class=o>=</span> <span class=o>(</span><span class=n>TypeVariable</span><span class=o>)</span><span class=n>fk</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>TypeVariable</span> <span class=n>valueType</span> <span class=o>=</span> <span class=o>(</span><span class=n>TypeVariable</span><span class=o>)</span><span class=n>fv</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1>// getName 方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>keyType</span><span class=o>.</span><span class=na>getName</span><span class=o>());</span> <span class=c1>// K
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>valueType</span><span class=o>.</span><span class=na>getName</span><span class=o>());</span> <span class=c1>// V
+</span></span></span><span class=line><span class=cl><span class=c1></span>    
+</span></span><span class=line><span class=cl>    <span class=c1>// getGenericDeclaration 方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>keyType</span><span class=o>.</span><span class=na>getGenericDeclaration</span><span class=o>());</span> 
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>valueType</span><span class=o>.</span><span class=na>getGenericDeclaration</span><span class=o>());</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;K 的上界:&#34;</span><span class=o>);</span> <span class=c1>// 有两个
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>for</span> <span class=o>(</span><span class=n>Type</span> <span class=n>type</span> <span class=o>:</span> <span class=n>keyType</span><span class=o>.</span><span class=na>getBounds</span><span class=o>())</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>type</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;V 的上界:&#34;</span><span class=o>);</span> <span class=c1>// 没明确声明上界的, 默认上界是 Object
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>for</span> <span class=o>(</span><span class=n>Type</span> <span class=n>type</span> <span class=o>:</span> <span class=n>valueType</span><span class=o>.</span><span class=na>getBounds</span><span class=o>())</span> <span class=o>{</span><span class=c1>// class java.lang.Object
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>type</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出为</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>K</span>
+</span></span><span class=line><span class=cl><span class=n>V</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>com</span><span class=o>.</span><span class=na>test</span><span class=o>.</span><span class=na>ExampleUnitTest$TestType</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>com</span><span class=o>.</span><span class=na>test</span><span class=o>.</span><span class=na>ExampleUnitTest$TestType</span>
+</span></span></code></pre></td></tr></table></div></div><p>K 的上界:</p><p><code>interface java.lang.Comparable</code></p><p><code>interface java.io.Serializable</code></p><p>V 的上界:</p><p><code>class java.lang.Object</code></p><a href=#parameterizedtype><h4 id=parameterizedtype><span class=hanchor arialabel=Anchor># </span>ParameterizedType</h4></a><p>具体的泛型类型，可以获得元数据中泛型签名类型(泛型真实类型)</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>class</span> <span class=nc>TestType</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Map</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>String</span><span class=o>&gt;</span> <span class=n>map</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@Test</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Field</span> <span class=n>f</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>f</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;map&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>NoSuchFieldException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>f</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>());</span>
+</span></span><span class=line><span class=cl>    <span class=n>ParameterizedType</span> <span class=n>pType</span> <span class=o>=</span> <span class=o>(</span><span class=n>ParameterizedType</span><span class=o>)</span> <span class=n>f</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>pType</span><span class=o>.</span><span class=na>getRawType</span><span class=o>());</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=o>(</span><span class=n>Type</span> <span class=n>type</span> <span class=o>:</span> <span class=n>pType</span><span class=o>.</span><span class=na>getActualTypeArguments</span><span class=o>())</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>type</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出为</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>Map</span><span class=o>&lt;</span><span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span><span class=o>,</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=kd>interface</span> <span class=nc>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>Map</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#genericarraytype><h4 id=genericarraytype><span class=hanchor arialabel=Anchor># </span>GenericArrayType</h4></a><p>当需要描述的类型是<strong>泛型类的数组</strong>时，比如 List[],Map[]，此接口会作为 Type 的实现。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>TestType</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;[]</span> <span class=n>lists</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=nd>@Test</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Field</span> <span class=n>f</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>f</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;lists&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>NoSuchFieldException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>GenericArrayType</span> <span class=n>genericType</span> <span class=o>=</span> <span class=o>(</span><span class=n>GenericArrayType</span><span class=o>)</span> <span class=n>f</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>genericType</span><span class=o>.</span><span class=na>getGenericComponentType</span><span class=o>());</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出为</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>List</span><span class=o>&lt;</span><span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>WildcardType</span> 
+</span></span></code></pre></td></tr></table></div></div><p>通配符泛型，获得上下限信息；</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>TestType</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>List</span><span class=o>&lt;?</span> <span class=kd>extends</span> <span class=n>Number</span><span class=o>&gt;</span> <span class=n>a</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>List</span><span class=o>&lt;?</span> <span class=kd>super</span> <span class=n>String</span><span class=o>&gt;</span> <span class=n>b</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@Test</span>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=kd>throws</span> <span class=n>NoSuchFieldException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Field</span> <span class=n>fieldA</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>Field</span> <span class=n>fieldB</span> <span class=o>=</span> <span class=n>TestType</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getDeclaredField</span><span class=o>(</span><span class=s>&#34;b&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>ParameterizedType</span> <span class=n>pTypeA</span> <span class=o>=</span> <span class=o>(</span><span class=n>ParameterizedType</span><span class=o>)</span> <span class=n>fieldA</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>ParameterizedType</span> <span class=n>pTypeB</span> <span class=o>=</span> <span class=o>(</span><span class=n>ParameterizedType</span><span class=o>)</span> <span class=n>fieldB</span><span class=o>.</span><span class=na>getGenericType</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>WildcardType</span> <span class=n>wTypeA</span> <span class=o>=</span> <span class=o>(</span><span class=n>WildcardType</span><span class=o>)</span> <span class=n>pTypeA</span><span class=o>.</span><span class=na>getActualTypeArguments</span><span class=o>()[</span><span class=n>0</span><span class=o>];</span>
+</span></span><span class=line><span class=cl>    <span class=n>WildcardType</span> <span class=n>wTypeB</span> <span class=o>=</span> <span class=o>(</span><span class=n>WildcardType</span><span class=o>)</span> <span class=n>pTypeB</span><span class=o>.</span><span class=na>getActualTypeArguments</span><span class=o>()[</span><span class=n>0</span><span class=o>];</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>wTypeA</span><span class=o>.</span><span class=na>getUpperBounds</span><span class=o>()[</span><span class=n>0</span><span class=o>]);</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>wTypeB</span><span class=o>.</span><span class=na>getLowerBounds</span><span class=o>()[</span><span class=n>0</span><span class=o>]);</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>wTypeA</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>wTypeB</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出为</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Number</span>
+</span></span><span class=line><span class=cl><span class=kd>class</span> <span class=nc>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span>
+</span></span><span class=line><span class=cl><span class=o>?</span> <span class=kd>extends</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Number</span>
+</span></span><span class=line><span class=cl><span class=o>?</span> <span class=kd>super</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>String</span>
+</span></span></code></pre></td></tr></table></div></div><p><img src=https://my-bucket-1251125515.cos.ap-guangzhou.myqcloud.com/Annotation%26Reflection/clipboard_20230322_115500.png width=auto alt></p><p>问题：为什么 Gson 反序列化时候需要借助 TypeToken 获取 Type？</p><p>//todo</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>
