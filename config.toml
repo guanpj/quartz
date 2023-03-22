@@ -1,5 +1,5 @@
 baseURL = "https://www.guanpj.top/"
-languageCode = "en-us"
+languageCode = "en"
 relativeURLs = false
 disablePathToLower = true
 ignoreFiles = [
