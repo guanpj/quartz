@@ -1,0 +1,151 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="ADB 命令 shell adb shell 常用的命令有 ：
+ am（activity manager）  可执行 启动 activity，service，broadcast，杀死进程等操作。
+ pm（package manager）  可以执行 安装/卸载 应用，输出 apk 路径等操作。"><meta property="og:title" content><meta property="og:description" content="ADB 命令 shell adb shell 常用的命令有 ：
+ am（activity manager）  可执行 启动 activity，service，broadcast，杀死进程等操作。
+ pm（package manager）  可以执行 安装/卸载 应用，输出 apk 路径等操作。"><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/ADB-%E5%91%BD%E4%BB%A4/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content><meta name=twitter:description content="ADB 命令 shell adb shell 常用的命令有 ：
+ am（activity manager）  可执行 启动 activity，service，broadcast，杀死进程等操作。
+ pm（package manager）  可以执行 安装/卸载 应用，输出 apk 路径等操作。"><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>🌻 guanpjの花园 🌵</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.f737ee403115fe4286a8f40e1fd105ff.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>Last updated
+Unknown</p><ul class=tags></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#adb-命令>ADB 命令</a></li><li><a href=#shell>shell</a></li><li><a href=#ps>ps</a><ol><li><a href=#常用参数>常用参数</a></li><li><a href=#常用属性>常用属性</a></li></ol></li><li><a href=#dympsys>dympsys</a><ol><li><a href=#服务总览>服务总览</a></li><li><a href=#参数查看>参数查看</a></li></ol></li></ol></nav></details></aside><a href=#adb-命令><h1 id=adb-命令><span class=hanchor arialabel=Anchor># </span>ADB 命令</h1></a><a href=#shell><h1 id=shell><span class=hanchor arialabel=Anchor># </span>shell</h1></a><p>adb shell 常用的命令有 ：</p><ul><li>am（activity manager）</li></ul><p>可执行 启动 activity，service，broadcast，杀死进程等操作。</p><ul><li>pm（package manager）</li></ul><p>可以执行 安装/卸载 应用，输出 apk 路径等操作。</p><ul><li>dpm（device policy manager）</li></ul><p>可以执行设备管理器相关命令，激活设备管理员，设置设备管理器 owner 等。</p><ul><li>screencap （截屏）</li></ul><p>使用该命令可以快速截屏并将图片保存至指定路径，截屏过程用户无感知。</p><a href=#ps><h1 id=ps><span class=hanchor arialabel=Anchor># </span>ps</h1></a><p>adb shell ps &ndash;help</p><p>查看帮助</p><p><img src=https://www.guanpj.top//static/boxcnCub4KKpp1oYuUs0c3cZQQd.png width=auto alt></p><a href=#常用参数><h2 id=常用参数><span class=hanchor arialabel=Anchor># </span>常用参数</h2></a><ul><li>-p 后面加 进程 id ，可以显示进程为指定 id 的信息</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-apache data-lang=apache><span class=line><span class=cl><span class=nb>adb</span> shell ps -p <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>USER</span>            PID   PPID     VSZ    RSS WCHAN            ADDR S NAME                       
+</span></span><span class=line><span class=cl><span class=nb>root</span>              <span class=m>1</span>      <span class=m>0</span> <span class=m>10782796</span>  <span class=m>4384</span> <span class=m>0</span>                   <span class=m>0</span> S init
+</span></span></code></pre></td></tr></table></div></div><ul><li>-P 后面加 父进程 id，可以显示父进程为指定 id 的信息</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-apache data-lang=apache><span class=line><span class=cl><span class=nb>adb</span> shell ps -P <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>USER</span>            PID   PPID     VSZ    RSS WCHAN            ADDR S NAME                       
+</span></span><span class=line><span class=cl><span class=nb>root</span>            <span class=m>133</span>      <span class=m>1</span> <span class=m>10761096</span>  <span class=m>2540</span> <span class=m>0</span>                   <span class=m>0</span> S init
+</span></span><span class=line><span class=cl><span class=nb>root</span>            <span class=m>285</span>      <span class=m>1</span> <span class=m>13495412</span> <span class=m>127540</span> <span class=m>0</span>                  <span class=m>0</span> S zygote64
+</span></span><span class=line><span class=cl><span class=nb>root</span>            <span class=m>286</span>      <span class=m>1</span> <span class=m>1840080</span> <span class=m>116252</span> <span class=m>0</span>                   <span class=m>0</span> S zygote
+</span></span></code></pre></td></tr></table></div></div><ul><li>-u 后面加 user 名，可以显示指定 user 的信息</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-perl data-lang=perl><span class=line><span class=cl><span class=n>adb</span> <span class=n>shell</span> <span class=n>ps</span> <span class=o>-</span><span class=n>u</span> <span class=nb>system</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>USER</span>            <span class=n>PID</span>   <span class=n>PPID</span>     <span class=n>VSZ</span>    <span class=n>RSS</span> <span class=n>WCHAN</span>            <span class=n>ADDR</span> <span class=n>S</span> <span class=n>NAME</span>                       
+</span></span><span class=line><span class=cl><span class=nb>system</span>          <span class=mi>164</span>      <span class=mi>1</span> <span class=mi>10759476</span>  <span class=mi>4296</span> <span class=mi>0</span>                   <span class=mi>0</span> <span class=n>S</span> <span class=n>servicemanager</span>
+</span></span><span class=line><span class=cl><span class=nb>system</span>          <span class=mi>551</span>    <span class=mi>285</span> <span class=mi>13891404</span> <span class=mi>262940</span> <span class=mi>0</span>                  <span class=mi>0</span> <span class=n>S</span> <span class=n>system_server</span>
+</span></span><span class=line><span class=cl><span class=sr>//</span> <span class=n>省略</span><span class=o>...</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>-T 将线程信息也显示出来</li></ul><a href=#常用属性><h2 id=常用属性><span class=hanchor arialabel=Anchor># </span>常用属性</h2></a><p>使用 <code>adb shell ps -o HELP</code> 可以查看 ps 命令可以查看的所有属性信息</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=n>Command</span><span class=w> </span><span class=n>line</span><span class=w> </span><span class=n>field</span><span class=w> </span><span class=n>types</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>ARGS</span><span class=w>    </span><span class=n>CMDLINE</span><span class=w> </span><span class=n>minus</span><span class=w> </span><span class=n>initial</span><span class=w> </span><span class=n>path</span><span class=w>     </span><span class=n>CMD</span><span class=w>     </span><span class=n>Thread</span><span class=w> </span><span class=n>name</span><span class=w> </span><span class=p>(</span><span class=o>/</span><span class=n>proc</span><span class=o>/</span><span class=n>TID</span><span class=o>/</span><span class=n>stat</span><span class=p>:</span><span class=mi>2</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>CMDLINE</span><span class=w> </span><span class=n>Command</span><span class=w> </span><span class=n>line</span><span class=w> </span><span class=p>(</span><span class=n>argv</span><span class=p>[])</span><span class=w>          </span><span class=n>COMM</span><span class=w>    </span><span class=n>EXE</span><span class=w> </span><span class=n>filename</span><span class=w> </span><span class=p>(</span><span class=o>/</span><span class=n>proc</span><span class=o>/</span><span class=n>PID</span><span class=o>/</span><span class=n>exe</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>COMMAND</span><span class=w> </span><span class=n>EXE</span><span class=w> </span><span class=n>path</span><span class=w> </span><span class=p>(</span><span class=o>/</span><span class=n>proc</span><span class=o>/</span><span class=n>PID</span><span class=o>/</span><span class=n>exe</span><span class=p>)</span><span class=w>       </span><span class=n>NAME</span><span class=w>    </span><span class=n>Process</span><span class=w> </span><span class=n>name</span><span class=w> </span><span class=p>(</span><span class=n>PID</span><span class=s1>&#39;s argv[0])
+</span></span></span><span class=line><span class=cl><span class=s1>
+</span></span></span><span class=line><span class=cl><span class=s1>Process attribute field types:
+</span></span></span><span class=line><span class=cl><span class=s1>
+</span></span></span><span class=line><span class=cl><span class=s1>  S       Process state:
+</span></span></span><span class=line><span class=cl><span class=s1>      R (running) S (sleeping) D (device I/O) T (stopped)  t (trace stop)
+</span></span></span><span class=line><span class=cl><span class=s1>      X (dead)    Z (zombie)   P (parked)     I (idle)
+</span></span></span><span class=line><span class=cl><span class=s1>      Also between Linux 2.6.33 and 3.13:
+</span></span></span><span class=line><span class=cl><span class=s1>      x (dead)    K (wakekill) W (waking)
+</span></span></span><span class=line><span class=cl><span class=s1>
+</span></span></span><span class=line><span class=cl><span class=s1>  SCH     Scheduling policy (0=other, 1=fifo, 2=rr, 3=batch, 4=iso, 5=idle)
+</span></span></span><span class=line><span class=cl><span class=s1>  STAT    Process state (S) plus:
+</span></span></span><span class=line><span class=cl><span class=s1>      &lt; high priority          N low priority L locked memory
+</span></span></span><span class=line><span class=cl><span class=s1>      s session leader         + foreground   l multithreaded
+</span></span></span><span class=line><span class=cl><span class=s1>  %CPU    Percentage of CPU time used    %MEM    RSS as % of physical memory
+</span></span></span><span class=line><span class=cl><span class=s1>  %VSZ    VSZ as % of physical memory    ADDR    Instruction pointer
+</span></span></span><span class=line><span class=cl><span class=s1>  BIT     32 or 64                       C       Total %CPU used since start
+</span></span></span><span class=line><span class=cl><span class=s1>  CPU     Which processor running on     DIO     Disk I/O
+</span></span></span><span class=line><span class=cl><span class=s1>  DREAD   Data read from disk            DWRITE  Data written to disk
+</span></span></span><span class=line><span class=cl><span class=s1>  ELAPSED Elapsed time since PID start   F       Flags 1=FORKNOEXEC 4=SUPERPRIV
+</span></span></span><span class=line><span class=cl><span class=s1>  GID     Group ID                       GROUP   Group name
+</span></span></span><span class=line><span class=cl><span class=s1>  IO      Data I/O                       LABEL   Security label
+</span></span></span><span class=line><span class=cl><span class=s1>  MAJFL   Major page faults              MINFL   Minor page faults
+</span></span></span><span class=line><span class=cl><span class=s1>  NI      Niceness (static 19 to -20)    PCY     Android scheduling policy
+</span></span></span><span class=line><span class=cl><span class=s1>  PGID    Process Group ID               PID     Process ID
+</span></span></span><span class=line><span class=cl><span class=s1>  PPID    Parent Process ID              PR      Prio Reversed (dyn 39-0, RT)
+</span></span></span><span class=line><span class=cl><span class=s1>  PRI     Priority (dynamic 0 to 139)    PSR     Processor last executed on
+</span></span></span><span class=line><span class=cl><span class=s1>  READ    Data read                      RES     Short RSS
+</span></span></span><span class=line><span class=cl><span class=s1>  RGID    Real (before sgid) Group ID    RGROUP  Real (before sgid) group name
+</span></span></span><span class=line><span class=cl><span class=s1>  RSS     Resident Set Size (DRAM pages) RTPRIO  Realtime priority
+</span></span></span><span class=line><span class=cl><span class=s1>  RUID    Real (before suid) user ID     RUSER   Real (before suid) user name
+</span></span></span><span class=line><span class=cl><span class=s1>  SHR     Shared memory                  STIME   Start time (ISO 8601)
+</span></span></span><span class=line><span class=cl><span class=s1>  SWAP    Swap I/O                       SZ      4k pages to swap out
+</span></span></span><span class=line><span class=cl><span class=s1>  TCNT    Thread count                   TID     Thread ID
+</span></span></span><span class=line><span class=cl><span class=s1>  TIME    CPU time consumed              TIME+   CPU time (high precision)
+</span></span></span><span class=line><span class=cl><span class=s1>  TTY     Controlling terminal           UID     User id
+</span></span></span><span class=line><span class=cl><span class=s1>  USER    User name                      VIRT    Virtual memory size
+</span></span></span><span class=line><span class=cl><span class=s1>  VSZ     Virtual memory size (1k units) WCHAN   Wait location in kernel
+</span></span></span><span class=line><span class=cl><span class=s1>  WRITE   Data written                   
+</span></span></span></code></pre></td></tr></table></div></div><p>这里列举一些常用的属性</p><p>命令行属性：</p><ul><li>NAME 进程名称</li><li>CMD 线程名</li></ul><p>进程属性：</p><ul><li>S 代表着进程状态，其中 R 代表运行中（running），S 代表休眠中（sleeping），X 代表死亡（dead）</li><li>USER 代表 User 名称</li><li>PID 进程 id</li><li>PPID 父进程 id</li><li>VSZ 进程虚拟地址空间大小</li><li>PCY Android 系统调度策略</li><li>TID 线程 id</li></ul><p>ps 命令默认显示 USER，PID，PPID，VSZ，RSS，WCHAN，ADDR，S，NAME 几个属性</p><p>可以使用 adb shell ps -o + 欲显示的属性名，逗号隔开 来自定义输出信息，例如输出 USER,UID,PID,PPID,PGID,PCY,NAME 几个属性，且进程 id 为 285 的进程信息</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-apache data-lang=apache><span class=line><span class=cl><span class=nb>adb</span> shell ps -o <span class=k>USER</span>,UID,PID,PPID,PGID,PCY,NAME  -p <span class=m>285</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>USER</span>           UID    PID   PPID  PGID PCY NAME                       
+</span></span><span class=line><span class=cl><span class=nb>root</span>             <span class=m>0</span>    <span class=m>285</span>      <span class=m>1</span>   <span class=m>285</span>  ta zygote64
+</span></span></code></pre></td></tr></table></div></div><a href=#dympsys><h1 id=dympsys><span class=hanchor arialabel=Anchor># </span>dympsys</h1></a><a href=#服务总览><h2 id=服务总览><span class=hanchor arialabel=Anchor># </span>服务总览</h2></a><p>dumpsys service 名称</p><a href=#参数查看><h2 id=参数查看><span class=hanchor arialabel=Anchor># </span>参数查看</h2></a><ul><li>adb shell dumpsys activity -h</li><li>adb shell dumpsys window -h</li><li>adb shell dumpsys meminfo -h</li><li>adb shell dumpsys package -h</li><li>adb shell dumpsys batteryinfo -h</li></ul><p>dumpsys activity containers</p><p>直观地查看 Activity 返回栈</p><p>dumpsys activity lastanr</p><p>查看自开机以来出现的最新的 ANR，即：关机失效，最新的会覆盖上一次</p><p>dumpsys activity starter</p><p>查看 Activity 的启动者</p><p>adb shell dumpsys activity activities | grep mResumedActivity</p><p>查看栈顶 Activity</p><p>adb shell dumpsys activity top | grep mParent</p><p>查看栈顶 activity 的所有 fragment，不过很多时候 activity 中会有一些不可见的 fragment 。例如：用于分发 Lifecycle 的 ReportFragment，Glide 中的空 fragment。因此我们可以使用 <code>grep</code> 将其过滤掉</p><p><strong>adb shell dumpsys meminfo -s [process] </strong>其中 process 输入 pid 和 applicationId 均可</p><p>按比例分摊的内存大小 (Proportional Set Size - <strong>PSS</strong>)</p><p>应用使用的 <strong>非共享页数量 + 共享页均匀分摊数量</strong>（例如，如果三个进程共享 3MB，则每个进程的 PSS 为 1MB）</p><p>adb shell dumpsys activity o</p><p>查询 OOM 相关的信息</p><p>adb shell dumpsys activity p</p><p>查看每个进程详细的信息</p><p>adb shell am force-stop 包名</p><p>强制杀死应用</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>

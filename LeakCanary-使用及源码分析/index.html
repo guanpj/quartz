@@ -1,0 +1,1223 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="LeakCanary 使用及源码分析 Refercence 及 ReferenceQueue Reference 介绍 Reference 即是我们平时所说的“引用”，与之对应的是一个泛型抽象类。四种引用类型：SoftReference(软引用)、WeakReference(弱引用)、PhantomReference（虚引用）都继承自 Reference。它的声明如下：
+1 2 3 4 5 6 7 8 9 10 11 12 13  public abstract class Reference<T> { //引用对象  volatile T referent; //保存即将被回收的Reference对象  final ReferenceQueue<?"><meta property="og:title" content><meta property="og:description" content="LeakCanary 使用及源码分析 Refercence 及 ReferenceQueue Reference 介绍 Reference 即是我们平时所说的“引用”，与之对应的是一个泛型抽象类。四种引用类型：SoftReference(软引用)、WeakReference(弱引用)、PhantomReference（虚引用）都继承自 Reference。它的声明如下：
+1 2 3 4 5 6 7 8 9 10 11 12 13  public abstract class Reference<T> { //引用对象  volatile T referent; //保存即将被回收的Reference对象  final ReferenceQueue<?"><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/LeakCanary-%E4%BD%BF%E7%94%A8%E5%8F%8A%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content><meta name=twitter:description content="LeakCanary 使用及源码分析 Refercence 及 ReferenceQueue Reference 介绍 Reference 即是我们平时所说的“引用”，与之对应的是一个泛型抽象类。四种引用类型：SoftReference(软引用)、WeakReference(弱引用)、PhantomReference（虚引用）都继承自 Reference。它的声明如下：
+1 2 3 4 5 6 7 8 9 10 11 12 13  public abstract class Reference<T> { //引用对象  volatile T referent; //保存即将被回收的Reference对象  final ReferenceQueue<?"><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>🌻 guanpjの花园 🌵</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.f737ee403115fe4286a8f40e1fd105ff.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>Last updated
+Unknown</p><ul class=tags></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#leakcanary-使用及源码分析>LeakCanary 使用及源码分析</a></li><li><a href=#refercence-及-referencequeue>Refercence 及 ReferenceQueue</a><ol><li><a href=#reference-介绍>Reference 介绍</a></li><li><a href=#referencequeue-原理和使用示例>ReferenceQueue 原理和使用示例</a></li></ol></li><li><a href=#leakcanary-基本使用>LeakCanary 基本使用</a><ol><li><a href=#20-之前>2.0 之前</a></li><li><a href=#20-开始>2.0 开始</a></li></ol></li><li><a href=#leakcanary-原理分析>LeakCanary 原理分析</a><ol><li><a href=#初始化>初始化</a></li><li><a href=#activity-回收监听>Activity 回收监听</a></li><li><a href=#获取-dumpheap-文件>获取 dumpHeap 文件</a></li><li><a href=#heapdump-文件解析>heapDump 文件解析</a></li><li><a href=#展示通知>展示通知</a></li><li><a href=#总结>总结</a></li></ol></li></ol></nav></details></aside><a href=#leakcanary-使用及源码分析><h1 id=leakcanary-使用及源码分析><span class=hanchor arialabel=Anchor># </span>LeakCanary 使用及源码分析</h1></a><a href=#refercence-及-referencequeue><h1 id=refercence-及-referencequeue><span class=hanchor arialabel=Anchor># </span>Refercence 及 ReferenceQueue</h1></a><a href=#reference-介绍><h2 id=reference-介绍><span class=hanchor arialabel=Anchor># </span>Reference 介绍</h2></a><p>Reference 即是我们平时所说的“引用”，与之对应的是一个泛型抽象类。四种引用类型：SoftReference(软引用)、WeakReference(弱引用)、PhantomReference（虚引用）都继承自 Reference。它的声明如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>abstract</span> <span class=kd>class</span> <span class=nc>Reference</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//引用对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>volatile</span> <span class=n>T</span> <span class=n>referent</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//保存即将被回收的Reference对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>final</span> <span class=n>ReferenceQueue</span><span class=o>&lt;?</span> <span class=kd>super</span> <span class=n>T</span><span class=o>&gt;</span> <span class=n>queue</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1>//在Enqueued状态下即引用加入队列时，指向下一个待处理Reference对象,默认为null
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>Reference</span> <span class=n>queueNext</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//在Pending状态下，待入列引用，默认为null
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>Reference</span><span class=o>&lt;?&gt;</span> <span class=n>pendingNext</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Reference 有四种状态：Active、Pending、Enqueued、Inactive，默认为 Active 状态。</p><p>ReferenceQueue 则是一个单向链表实现的队列数据结构，存储的是 Reference 对象。包含了入列 enqueue、出列 poll 和移除 remove 操作。</p><a href=#referencequeue-原理和使用示例><h2 id=referencequeue-原理和使用示例><span class=hanchor arialabel=Anchor># </span>ReferenceQueue 原理和使用示例</h2></a><p>Reference 配合 ReferenceQueue 可以实现对象回收监听，使用方法如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=c1>//创建一个引用队列
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>ReferenceQueue</span> <span class=n>queue</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ReferenceQueue</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=c1>//创建对象
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>Object</span> <span class=n>object</span> <span class=o>=</span> <span class=k>new</span> <span class=n>Object</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=c1>//创建 object 对象的弱引用，并关联引用队列 queue
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>WeakReference</span> <span class=n>reference</span> <span class=o>=</span> <span class=k>new</span> <span class=n>WeakReference</span><span class=o>(</span><span class=n>object</span><span class=o>,</span> <span class=n>queue</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>reference</span><span class=o>);</span>
+</span></span><span class=line><span class=cl><span class=n>System</span><span class=o>.</span><span class=na>gc</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=c1>//当 reference 被成功回收后，可以从 queue 中获取到该引用
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>queue</span><span class=o>.</span><span class=na>remove</span><span class=o>());</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>ref</span><span class=o>.</span><span class=na>WeakReference</span><span class=nd>@3d833955</span>
+</span></span><span class=line><span class=cl><span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>ref</span><span class=o>.</span><span class=na>WeakReference</span><span class=nd>@3d833955</span>
+</span></span></code></pre></td></tr></table></div></div><p>示例中的对象当然是可以正常回收的，所以回收后可以在关联的引用队列 queue 中获取到该引用。反之，若某个应该被回收的对象，GC 结束后在 queue 中未找到该引用，则表明该引用存在内存泄漏风险，这也就是 LeakCanary 的基本原理。</p><a href=#leakcanary-基本使用><h1 id=leakcanary-基本使用><span class=hanchor arialabel=Anchor># </span>LeakCanary 基本使用</h1></a><a href=#20-之前><h2 id=20-之前><span class=hanchor arialabel=Anchor># </span>2.0 之前</h2></a><p>导入依赖：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>debugImplementation &#39;com.squareup.leakcanary:leakcanary-android:1.6.1&#39;
+</span></span><span class=line><span class=cl>releaseImplementation &#39;com.squareup.leakcanary:leakcanary-android-no-op:1.6.1&#39;
+</span></span><span class=line><span class=cl>debugImplementation &#39;com.squareup.leakcanary:leakcanary-support-fragment:1.6.1&#39;
+</span></span></code></pre></td></tr></table></div></div><p>在项目的自定义 Application 中进行初始化：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>initLeakCanary</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=n>LeakCanary</span><span class=p>.</span><span class=n>isInAnalyzerProcess</span><span class=p>(</span><span class=k>this</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>LeakCanary</span><span class=p>.</span><span class=n>install</span><span class=p>(</span><span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#20-开始><h2 id=20-开始><span class=hanchor arialabel=Anchor># </span>2.0 开始</h2></a><p>LeakCanary 从 2.0 开始采用 Kotlin 编写，并且只需要导入依赖即可，不用再手动进行初始化操作：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-plain data-lang=plain><span class=line><span class=cl>debugImplementation &#39;com.squareup.leakcanary:leakcanary-android:2.7&#39;
+</span></span></code></pre></td></tr></table></div></div><p>并且 Leakcanary 2.0 版本还增加了 shark 模块，用于 dumpFile 分析，相比于之前的方法大幅减少了内存的占用。</p><p>接下来的分析流程也是基于 2.7 版本进行的。</p><a href=#leakcanary-原理分析><h1 id=leakcanary-原理分析><span class=hanchor arialabel=Anchor># </span>LeakCanary 原理分析</h1></a><a href=#初始化><h2 id=初始化><span class=hanchor arialabel=Anchor># </span>初始化</h2></a><p>既然不用手动初始化，那必定有自动初始化的入口。在 leakcanary-object-watcher-android 模块的
+<a href=https://github.com/square/leakcanary/blob/main/leakcanary-object-watcher-android/src/main/AndroidManifest.xml rel=noopener>Manifest 文件</a>中声明了一个 Provider 组件：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=nt>&lt;application&gt;</span>
+</span></span><span class=line><span class=cl>	<span class=nt>&lt;provider</span>
+</span></span><span class=line><span class=cl>	    <span class=na>android:name=</span><span class=s>&#34;leakcanary.internal.AppWatcherInstaller$MainProcess&#34;</span>
+</span></span><span class=line><span class=cl>	    <span class=na>android:authorities=</span><span class=s>&#34;${applicationId}.leakcanary-installer&#34;</span>
+</span></span><span class=line><span class=cl>	    <span class=na>android:enabled=</span><span class=s>&#34;@bool/leak_canary_watcher_auto_install&#34;</span>
+</span></span><span class=line><span class=cl>	    <span class=na>android:exported=</span><span class=s>&#34;false&#34;</span><span class=nt>/&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/application&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>顺蔓摸瓜，查看 AppWatcherInstaller：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>override</span> <span class=k>fun</span> <span class=nf>onCreate</span><span class=p>():</span> <span class=n>Boolean</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>application</span> <span class=p>=</span> <span class=n>context</span><span class=o>!!</span><span class=p>.</span><span class=n>applicationContext</span> <span class=k>as</span> <span class=n>Application</span>
+</span></span><span class=line><span class=cl>  <span class=n>AppWatcher</span><span class=p>.</span><span class=n>manualInstall</span><span class=p>(</span><span class=n>application</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>果然找到了初始化方法，接着跟踪 AppWatcher 类：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=nd>@JvmOverloads</span>
+</span></span><span class=line><span class=cl><span class=k>fun</span> <span class=nf>manualInstall</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>application</span><span class=p>:</span> <span class=n>Application</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>retainedDelayMillis</span><span class=p>:</span> <span class=n>Long</span> <span class=p>=</span> <span class=n>TimeUnit</span><span class=p>.</span><span class=n>SECONDS</span><span class=p>.</span><span class=n>toMillis</span><span class=p>(</span><span class=m>5</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>watchersToInstall</span><span class=p>:</span> <span class=n>List</span><span class=p>&lt;</span><span class=n>InstallableWatcher</span><span class=p>&gt;</span> <span class=p>=</span> <span class=n>appDefaultWatchers</span><span class=p>(</span><span class=n>application</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//1、确保在主线程，否则抛出UnsupportedOperationException异常
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>checkMainThread</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>isInstalled</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>throw</span> <span class=n>IllegalStateException</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;AppWatcher already installed, see exception cause for prior install call&#34;</span><span class=p>,</span> <span class=n>installCause</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>check</span><span class=p>(</span><span class=n>retainedDelayMillis</span> <span class=o>&gt;=</span> <span class=m>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;retainedDelayMillis </span><span class=si>$retainedDelayMillis</span><span class=s2> must be at least 0 ms&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>installCause</span> <span class=p>=</span> <span class=n>RuntimeException</span><span class=p>(</span><span class=s2>&#34;manualInstall() first called here&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>this</span><span class=p>.</span><span class=n>retainedDelayMillis</span> <span class=p>=</span> <span class=n>retainedDelayMillis</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>application</span><span class=p>.</span><span class=n>isDebuggableBuild</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>LogcatSharkLog</span><span class=p>.</span><span class=n>install</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//2、Requires AppWatcher.objectWatcher to be set
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>LeakCanaryDelegate</span><span class=p>.</span><span class=n>loadLeakCanary</span><span class=p>(</span><span class=n>application</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//3、初始化 Activity 和 Fragment 监听器
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>watchersToInstall</span><span class=p>.</span><span class=n>forEach</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>it</span><span class=p>.</span><span class=n>install</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>跟踪注释 2 处：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>internal</span> <span class=k>object</span> <span class=nc>LeakCanaryDelegate</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//使用 lazy 实现懒汉单例
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nd>@Suppress</span><span class=p>(</span><span class=s2>&#34;UNCHECKED_CAST&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>loadLeakCanary</span> <span class=k>by</span> <span class=n>lazy</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=c1>//反射调用 InternalLeakCanary
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=k>val</span> <span class=py>leakCanaryListener</span> <span class=p>=</span> <span class=n>Class</span><span class=p>.</span><span class=n>forName</span><span class=p>(</span><span class=s2>&#34;leakcanary.internal.InternalLeakCanary&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=n>leakCanaryListener</span><span class=p>.</span><span class=n>getDeclaredField</span><span class=p>(</span><span class=s2>&#34;INSTANCE&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>.</span><span class=k>get</span><span class=p>(</span><span class=k>null</span><span class=p>)</span> <span class=k>as</span> <span class=p>(</span><span class=n>Application</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>Unit</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>catch</span> <span class=p>(</span><span class=n>ignored</span><span class=p>:</span> <span class=n>Throwable</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>NoLeakCanary</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>object</span> <span class=nc>NoLeakCanary</span> <span class=p>:</span> <span class=p>(</span><span class=n>Application</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>Unit</span><span class=p>,</span> <span class=n>OnObjectRetainedListener</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>override</span> <span class=k>fun</span> <span class=nf>invoke</span><span class=p>(</span><span class=n>application</span><span class=p>:</span> <span class=n>Application</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>override</span> <span class=k>fun</span> <span class=nf>onObjectRetained</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>接着查看 InternalLeakCanary 的 invoke 方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>override</span> <span class=k>fun</span> <span class=nf>invoke</span><span class=p>(</span><span class=n>application</span><span class=p>:</span> <span class=n>Application</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>_application</span> <span class=p>=</span> <span class=n>application</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>checkRunningInDebuggableBuild</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//为 objectWatcher 对象添加 this 作为对象保留监听器
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>AppWatcher</span><span class=p>.</span><span class=n>objectWatcher</span><span class=p>.</span><span class=n>addOnObjectRetainedListener</span><span class=p>(</span><span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//初始化 AndroidHeapDumper
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>heapDumper</span> <span class=p>=</span> <span class=n>AndroidHeapDumper</span><span class=p>(</span><span class=n>application</span><span class=p>,</span> <span class=n>createLeakDirectoryProvider</span><span class=p>(</span><span class=n>application</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//GcTrigger
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>gcTrigger</span> <span class=p>=</span> <span class=n>GcTrigger</span><span class=p>.</span><span class=n>Default</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>configProvider</span> <span class=p>=</span> <span class=p>{</span> <span class=n>LeakCanary</span><span class=p>.</span><span class=n>config</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//初始化 backgroundHandler
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>handlerThread</span> <span class=p>=</span> <span class=n>HandlerThread</span><span class=p>(</span><span class=n>LEAK_CANARY_THREAD_NAME</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>handlerThread</span><span class=p>.</span><span class=n>start</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>backgroundHandler</span> <span class=p>=</span> <span class=n>Handler</span><span class=p>(</span><span class=n>handlerThread</span><span class=p>.</span><span class=n>looper</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//初始化 HeapDumpTrigger
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>heapDumpTrigger</span> <span class=p>=</span> <span class=n>HeapDumpTrigger</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>application</span><span class=p>,</span> <span class=n>backgroundHandler</span><span class=p>,</span> <span class=n>AppWatcher</span><span class=p>.</span><span class=n>objectWatcher</span><span class=p>,</span> <span class=n>gcTrigger</span><span class=p>,</span> <span class=n>heapDumper</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>configProvider</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1>//监听 app 进入后台/返回前台事件
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>application</span><span class=p>.</span><span class=n>registerVisibilityListener</span> <span class=p>{</span> <span class=n>applicationVisible</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>this</span><span class=p>.</span><span class=n>applicationVisible</span> <span class=p>=</span> <span class=n>applicationVisible</span>
+</span></span><span class=line><span class=cl>    <span class=n>heapDumpTrigger</span><span class=p>.</span><span class=n>onApplicationVisibilityChanged</span><span class=p>(</span><span class=n>applicationVisible</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>registerResumedActivityListener</span><span class=p>(</span><span class=n>application</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>addDynamicShortcut</span><span class=p>(</span><span class=n>application</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// We post so that the log happens after Application.onCreate()
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>mainHandler</span><span class=p>.</span><span class=n>post</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// https://github.com/square/leakcanary/issues/1981
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// We post to a background handler because HeapDumpControl.iCanHasHeap() checks a shared pref
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// which blocks until loaded and that creates a StrictMode violation.
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>backgroundHandler</span><span class=p>.</span><span class=n>post</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>when</span> <span class=p>(</span><span class=k>val</span> <span class=py>iCanHasHeap</span> <span class=p>=</span> <span class=n>HeapDumpControl</span><span class=p>.</span><span class=n>iCanHasHeap</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=k>is</span> <span class=n>Yup</span> <span class=o>-&gt;</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span><span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_heap_dump_enabled_text</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>          <span class=k>is</span> <span class=n>Nope</span> <span class=o>-&gt;</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_heap_dump_disabled_text</span><span class=p>,</span> <span class=n>iCanHasHeap</span><span class=p>.</span><span class=n>reason</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>          <span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>至此，InternalLeakCanary 初始化完成。回到 manualInstall 方法中继续查看注释 3 处代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=n>watchersToInstall</span><span class=p>.</span><span class=n>forEach</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>it</span><span class=p>.</span><span class=n>install</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=n>watchersToInstall</span> <span class=n>来自</span> <span class=n>appDefaultWatchers</span> <span class=n>方法</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=k>fun</span> <span class=nf>appDefaultWatchers</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>application</span><span class=p>:</span> <span class=n>Application</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>reachabilityWatcher</span><span class=p>:</span> <span class=n>ReachabilityWatcher</span> <span class=p>=</span> <span class=n>objectWatcher</span>
+</span></span><span class=line><span class=cl><span class=p>):</span> <span class=n>List</span><span class=p>&lt;</span><span class=n>InstallableWatcher</span><span class=p>&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=n>listOf</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>ActivityWatcher</span><span class=p>(</span><span class=n>application</span><span class=p>,</span> <span class=n>reachabilityWatcher</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>FragmentAndViewModelWatcher</span><span class=p>(</span><span class=n>application</span><span class=p>,</span> <span class=n>reachabilityWatcher</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>RootViewWatcher</span><span class=p>(</span><span class=n>reachabilityWatcher</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>ServiceWatcher</span><span class=p>(</span><span class=n>reachabilityWatcher</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>以 ActivityWatcher 为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>class</span> <span class=nc>ActivityWatcher</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=k>private</span> <span class=k>val</span> <span class=py>application</span><span class=p>:</span> <span class=n>Application</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>private</span> <span class=k>val</span> <span class=py>reachabilityWatcher</span><span class=p>:</span> <span class=n>ReachabilityWatcher</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>:</span> <span class=n>InstallableWatcher</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>private</span> <span class=k>val</span> <span class=py>lifecycleCallbacks</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>object</span> <span class=err>: </span><span class=nc>Application</span><span class=p>.</span><span class=n>ActivityLifecycleCallbacks</span> <span class=k>by</span> <span class=n>noOpDelegate</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>override</span> <span class=k>fun</span> <span class=nf>onActivityDestroyed</span><span class=p>(</span><span class=n>activity</span><span class=p>:</span> <span class=n>Activity</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>reachabilityWatcher</span><span class=p>.</span><span class=n>expectWeaklyReachable</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>          <span class=n>activity</span><span class=p>,</span> <span class=s2>&#34;</span><span class=si>${activity::class.java.name}</span><span class=s2> received Activity#onDestroy() callback&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>fun</span> <span class=nf>install</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>application</span><span class=p>.</span><span class=n>registerActivityLifecycleCallbacks</span><span class=p>(</span><span class=n>lifecycleCallbacks</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=k>override</span> <span class=k>fun</span> <span class=nf>uninstall</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>application</span><span class=p>.</span><span class=n>unregisterActivityLifecycleCallbacks</span><span class=p>(</span><span class=n>lifecycleCallbacks</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>install 方法将 lifecycleCallbacks 注册为 application 的 ActivityLifecycleCallbacks，用来感知所有 Activity 的声明周期。</p><p>by noOpDelegate() 通过类委托机制将其他回调实现都交给 noOpDelegate，而 noOpDelegate 是一个空实现的动态代理。这里只需要监听 Activity 销毁事件，因此只需要重写 onActivityDestroyed 即可。</p><a href=#activity-回收监听><h2 id=activity-回收监听><span class=hanchor arialabel=Anchor># </span>Activity 回收监听</h2></a><p>在 onActivityDestroyed 方法被回调时，调用了 reachabilityWatcher 的 expectWeaklyReachable 方法并将 activity 对象传进去。这里 reachabilityWatcher 的唯一实现类为 ObjectWatcher，查看它的 expectWeaklyReachable 方法内容：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=nd>@Synchronized</span> <span class=k>override</span> <span class=k>fun</span> <span class=nf>expectWeaklyReachable</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>watchedObject</span><span class=p>:</span> <span class=n>Any</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>description</span><span class=p>:</span> <span class=n>String</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=o>!is</span><span class=n>Enabled</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//将 ReferenceQueue 中出现的弱引用移除，即忽略已被回收的 Activity
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>removeWeaklyReachableObjects</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//生成随机的 key 值
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>key</span> <span class=p>=</span> <span class=n>UUID</span><span class=p>.</span><span class=n>randomUUID</span><span class=p>().</span><span class=n>toString</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//记录时间
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>watchUptimeMillis</span> <span class=p>=</span> <span class=n>clock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//将 Activity 对象（watchedObject）封装成 KeyedWeakReference
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>//并关联引用队列 queue
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>reference</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>KeyedWeakReference</span><span class=p>(</span><span class=n>watchedObject</span><span class=p>,</span> <span class=n>key</span><span class=p>,</span> <span class=n>description</span><span class=p>,</span> <span class=n>watchUptimeMillis</span><span class=p>,</span> <span class=n>queue</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Watching &#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>      <span class=p>(</span><span class=k>if</span> <span class=p>(</span><span class=n>watchedObject</span> <span class=k>is</span> <span class=n>Class</span><span class=p>&lt;*&gt;)</span> <span class=n>watchedObject</span><span class=p>.</span><span class=n>toString</span><span class=p>()</span> <span class=k>else</span> <span class=s2>&#34;instance of </span><span class=si>${watchedObject.javaClass.name}</span><span class=s2>&#34;</span><span class=p>)</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>      <span class=p>(</span><span class=k>if</span> <span class=p>(</span><span class=n>description</span><span class=p>.</span><span class=n>isNotEmpty</span><span class=p>())</span> <span class=s2>&#34; (</span><span class=si>$description</span><span class=s2>)&#34;</span> <span class=k>else</span> <span class=s2>&#34;&#34;</span><span class=p>)</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34; with key </span><span class=si>$key</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//将弱引用 reference 存入监听 map 集合
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>watchedObjects</span><span class=p>[</span><span class=n>key</span><span class=p>]</span> <span class=p>=</span> <span class=n>reference</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//5 秒之后在主线程执行 moveToRetained(key) 方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>checkRetainedExecutor</span><span class=p>.</span><span class=n>execute</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>moveToRetained</span><span class=p>(</span><span class=n>key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>removeWeaklyReachableObjects</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// WeakReferences are enqueued as soon as the object to which they point to becomes weakly
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// reachable. This is before finalization or garbage collection has actually happened.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>var</span> <span class=py>ref</span><span class=p>:</span> <span class=n>KeyedWeakReference</span><span class=p>?</span>
+</span></span><span class=line><span class=cl>  <span class=k>do</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//从 queue 中取出对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>ref</span> <span class=p>=</span> <span class=n>queue</span><span class=p>.</span><span class=n>poll</span><span class=p>()</span> <span class=k>as</span> <span class=n>KeyedWeakReference</span><span class=p>?</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=n>ref</span> <span class=o>!=</span> <span class=k>null</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=c1>//将该对象从集合中移除
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=n>watchedObjects</span><span class=p>.</span><span class=n>remove</span><span class=p>(</span><span class=n>ref</span><span class=p>.</span><span class=n>key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>while</span> <span class=p>(</span><span class=n>ref</span> <span class=o>!=</span> <span class=k>null</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>为什么会是 5 秒，这里猜测与 Android GC 有关。在 Activity.H 中，收到 GC_WHEN_IDLE 消息时会进行 Looper.myQueue().addIdleHandler(mGcIdler)，而 mGcIdler 最后会触发 doGcIfNeeded 操作，在该方法中会判断上次 GC 与现在时间的差值，而这个值就是 MIN_TIME_BETWEEN_GCS = 5*1000。</p><p>查看 moveToRetained 方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=nd>@Synchronized</span> <span class=k>private</span> <span class=k>fun</span> <span class=nf>moveToRetained</span><span class=p>(</span><span class=n>key</span><span class=p>:</span> <span class=n>String</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//再次移除已被回收的对象对应的弱引用 Reference
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>removeWeaklyReachableObjects</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>retainedRef</span> <span class=p>=</span> <span class=n>watchedObjects</span><span class=p>[</span><span class=n>key</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//如果用这个 key 对应的 Reference 没有被移除，说明已经发生泄漏
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=n>retainedRef</span> <span class=o>!=</span> <span class=k>null</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>retainedRef</span><span class=p>.</span><span class=n>retainedUptimeMillis</span> <span class=p>=</span> <span class=n>clock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//通知 listener
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>onObjectRetainedListeners</span><span class=p>.</span><span class=n>forEach</span> <span class=p>{</span> <span class=k>it</span><span class=p>.</span><span class=n>onObjectRetained</span><span class=p>()</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>在经过 5s 后，再次移除被回收的对象对应的 Reference。然后再判断 watchedObjects 集合中是否是否仍然存在该 key 对应的 value，如果存在则认为该 value 对应的对象发生了泄露。随后记录下发生时间，并通知 listener 发生对象残留情况。</p><p>这里的 listener 就是 InternalLeakCanary 的 invoke 方法中设置的 InternalLeakCanary.this 对象，查看 InternalLeakCanary 的 onObjectRetained 方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>override</span> <span class=k>fun</span> <span class=nf>onObjectRetained</span><span class=p>()</span> <span class=p>=</span> <span class=n>scheduleRetainedObjectCheck</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>继续跟进</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=k>fun</span> <span class=nf>scheduleRetainedObjectCheck</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=k>this</span><span class=o>::</span><span class=n>heapDumpTrigger</span><span class=p>.</span><span class=n>isInitialized</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>heapDumpTrigger</span><span class=p>.</span><span class=n>scheduleRetainedObjectCheck</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=n>继续追踪</span> <span class=n>HeapDumpTrigger</span> <span class=n>的</span> <span class=n>scheduleRetainedObjectCheck</span> <span class=n>方法</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=k>fun</span> <span class=nf>scheduleRetainedObjectCheck</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>delayMillis</span><span class=p>:</span> <span class=n>Long</span> <span class=p>=</span> <span class=m>0L</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>checkCurrentlyScheduledAt</span> <span class=p>=</span> <span class=n>checkScheduledAt</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>checkCurrentlyScheduledAt</span> <span class=p>&gt;</span> <span class=m>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>checkScheduledAt</span> <span class=p>=</span> <span class=n>SystemClock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span> <span class=p>+</span> <span class=n>delayMillis</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//将后面的流程 post 到后台线程执行
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>backgroundHandler</span><span class=p>.</span><span class=n>postDelayed</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=n>checkScheduledAt</span> <span class=p>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl>    <span class=n>checkRetainedObjects</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span> <span class=n>delayMillis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=n>查看</span> <span class=n>checkretainedObjects</span> <span class=n>方法</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>checkRetainedObjects</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>iCanHasHeap</span> <span class=p>=</span> <span class=n>HeapDumpControl</span><span class=p>.</span><span class=n>iCanHasHeap</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>config</span> <span class=p>=</span> <span class=n>configProvider</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>iCanHasHeap</span> <span class=k>is</span> <span class=n>Nope</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=o>..</span><span class=p>.</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//获取没有被回收对象的个数
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>var</span> <span class=py>retainedReferenceCount</span> <span class=p>=</span> <span class=n>objectWatcher</span><span class=p>.</span><span class=n>retainedObjectCount</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//如果没有被回收的对象个数大于 0
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=n>retainedReferenceCount</span> <span class=p>&gt;</span> <span class=m>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//执行一次GC
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>gcTrigger</span><span class=p>.</span><span class=n>runGc</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//再次获取没有被回收对象的个数
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>retainedReferenceCount</span> <span class=p>=</span> <span class=n>objectWatcher</span><span class=p>.</span><span class=n>retainedObjectCount</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//检查没有被回收对象的个数，如果少于 5 个则返回
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=n>checkRetainedCount</span><span class=p>(</span><span class=n>retainedReferenceCount</span><span class=p>,</span> <span class=n>config</span><span class=p>.</span><span class=n>retainedVisibleThreshold</span><span class=p>))</span> <span class=k>return</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>now</span> <span class=p>=</span> <span class=n>SystemClock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>elapsedSinceLastDumpMillis</span> <span class=p>=</span> <span class=n>now</span> <span class=p>-</span> <span class=n>lastHeapDumpUptimeMillis</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//WAIT_BETWEEN_HEAP_DUMPS_MILLIS 为 60_000L
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>//即 60 秒内再次发现泄漏只会发出通知并返回
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=n>elapsedSinceLastDumpMillis</span> <span class=p>&lt;</span> <span class=n>WAIT_BETWEEN_HEAP_DUMPS_MILLIS</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>onRetainInstanceListener</span><span class=p>.</span><span class=n>onEvent</span><span class=p>(</span><span class=n>DumpHappenedRecently</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>showRetainedCountNotification</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>objectCount</span> <span class=p>=</span> <span class=n>retainedReferenceCount</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>contentText</span> <span class=p>=</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span><span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_notification_retained_dump_wait</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>scheduleRetainedObjectCheck</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>delayMillis</span> <span class=p>=</span> <span class=n>WAIT_BETWEEN_HEAP_DUMPS_MILLIS</span> <span class=p>-</span> <span class=n>elapsedSinceLastDumpMillis</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>dismissRetainedCountNotification</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>visibility</span> <span class=p>=</span> <span class=k>if</span> <span class=p>(</span><span class=n>applicationVisible</span><span class=p>)</span> <span class=s2>&#34;visible&#34;</span> <span class=k>else</span> <span class=s2>&#34;not visible&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//获取内存快照，即.hprof文件
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>dumpHeap</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>retainedReferenceCount</span> <span class=p>=</span> <span class=n>retainedReferenceCount</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>retry</span> <span class=p>=</span> <span class=k>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>reason</span> <span class=p>=</span> <span class=s2>&#34;</span><span class=si>$retainedReferenceCount</span><span class=s2> retained objects, app is </span><span class=si>$visibility</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#获取-dumpheap-文件><h2 id=获取-dumpheap-文件><span class=hanchor arialabel=Anchor># </span>获取 dumpHeap 文件</h2></a><p>继续查看：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>dumpHeap</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>retainedReferenceCount</span><span class=p>:</span> <span class=n>Int</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>retry</span><span class=p>:</span> <span class=n>Boolean</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>reason</span><span class=p>:</span> <span class=n>String</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>saveResourceIdNamesToMemory</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapDumpUptimeMillis</span> <span class=p>=</span> <span class=n>SystemClock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=n>KeyedWeakReference</span><span class=p>.</span><span class=n>heapDumpUptimeMillis</span> <span class=p>=</span> <span class=n>heapDumpUptimeMillis</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//调用 AndroidHeapDumper 的 dumpHeap 方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>when</span> <span class=p>(</span><span class=k>val</span> <span class=py>heapDumpResult</span> <span class=p>=</span> <span class=n>heapDumper</span><span class=p>.</span><span class=n>dumpHeap</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>NoHeapDump</span> <span class=o>-&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=p>(</span><span class=n>retry</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span> <span class=s2>&#34;Failed to dump heap, will retry in </span><span class=si>$WAIT</span><span class=s2>_AFTER_DUMP_FAILED_MILLIS ms&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=n>scheduleRetainedObjectCheck</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>          <span class=n>delayMillis</span> <span class=p>=</span> <span class=n>WAIT_AFTER_DUMP_FAILED_MILLIS</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span> <span class=s2>&#34;Failed to dump heap, will not automatically retry&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=n>showRetainedCountNotification</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>objectCount</span> <span class=p>=</span> <span class=n>retainedReferenceCount</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>contentText</span> <span class=p>=</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>          <span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_notification_retained_dump_failed</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>HeapDump</span> <span class=o>-&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>lastDisplayedRetainedObjectCount</span> <span class=p>=</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl>      <span class=n>lastHeapDumpUptimeMillis</span> <span class=p>=</span> <span class=n>SystemClock</span><span class=p>.</span><span class=n>uptimeMillis</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>      <span class=c1>//清理 objectWatcher 中 heapDumpUptimeMillis 之前保存的键值对
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=n>objectWatcher</span><span class=p>.</span><span class=n>clearObjectsWatchedBefore</span><span class=p>(</span><span class=n>heapDumpUptimeMillis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=c1>//分析 dump 文件
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=n>HeapAnalyzerService</span><span class=p>.</span><span class=n>runAnalysis</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>context</span> <span class=p>=</span> <span class=n>application</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>heapDumpFile</span> <span class=p>=</span> <span class=n>heapDumpResult</span><span class=p>.</span><span class=k>file</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>heapDumpDurationMillis</span> <span class=p>=</span> <span class=n>heapDumpResult</span><span class=p>.</span><span class=n>durationMillis</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>heapDumpReason</span> <span class=p>=</span> <span class=n>reason</span>
+</span></span><span class=line><span class=cl>      <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@Synchronized</span> <span class=k>fun</span> <span class=nf>clearObjectsWatchedBefore</span><span class=p>(</span><span class=n>heapDumpUptimeMillis</span><span class=p>:</span> <span class=n>Long</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>weakRefsToRemove</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>watchedObjects</span><span class=p>.</span><span class=n>filter</span> <span class=p>{</span> <span class=k>it</span><span class=p>.</span><span class=n>value</span><span class=p>.</span><span class=n>watchUptimeMillis</span> <span class=o>&lt;=</span> <span class=n>heapDumpUptimeMillis</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>weakRefsToRemove</span><span class=p>.</span><span class=n>values</span><span class=p>.</span><span class=n>forEach</span> <span class=p>{</span> <span class=k>it</span><span class=p>.</span><span class=n>clear</span><span class=p>()</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>watchedObjects</span><span class=p>.</span><span class=n>keys</span><span class=p>.</span><span class=n>removeAll</span><span class=p>(</span><span class=n>weakRefsToRemove</span><span class=p>.</span><span class=n>keys</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#heapdump-文件解析><h2 id=heapdump-文件解析><span class=hanchor arialabel=Anchor># </span>heapDump 文件解析</h2></a><p>继续查看 HeapAnalyzerService 类：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>fun</span> <span class=nf>runAnalysis</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=p>:</span> <span class=n>Context</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpFile</span><span class=p>:</span> <span class=n>File</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpDurationMillis</span><span class=p>:</span> <span class=n>Long</span><span class=p>?</span> <span class=p>=</span> <span class=k>null</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpReason</span><span class=p>:</span> <span class=n>String</span> <span class=p>=</span> <span class=s2>&#34;Unknown&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>intent</span> <span class=p>=</span> <span class=n>Intent</span><span class=p>(</span><span class=n>context</span><span class=p>,</span> <span class=n>HeapAnalyzerService</span><span class=o>::</span><span class=k>class</span><span class=p>.</span><span class=n>java</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>intent</span><span class=p>.</span><span class=n>putExtra</span><span class=p>(</span><span class=n>HEAPDUMP_FILE_EXTRA</span><span class=p>,</span> <span class=n>heapDumpFile</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>intent</span><span class=p>.</span><span class=n>putExtra</span><span class=p>(</span><span class=n>HEAPDUMP_REASON_EXTRA</span><span class=p>,</span> <span class=n>heapDumpReason</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpDurationMillis</span><span class=o>?.</span><span class=n>let</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>intent</span><span class=p>.</span><span class=n>putExtra</span><span class=p>(</span><span class=n>HEAPDUMP_DURATION_MILLIS_EXTRA</span><span class=p>,</span> <span class=n>heapDumpDurationMillis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//启动一个 Service，并将 heapDump 文件信息传入进去
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>startForegroundService</span><span class=p>(</span><span class=n>context</span><span class=p>,</span> <span class=n>intent</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>startForegroundService</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=p>:</span> <span class=n>Context</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>intent</span><span class=p>:</span> <span class=n>Intent</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>SDK_INT</span> <span class=o>&gt;=</span> <span class=m>26</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>context</span><span class=p>.</span><span class=n>startForegroundService</span><span class=p>(</span><span class=n>intent</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Pre-O behavior.
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>context</span><span class=p>.</span><span class=n>startService</span><span class=p>(</span><span class=n>intent</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>启动 HeapAnalyzerService 后：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>override</span> <span class=k>fun</span> <span class=nf>onHandleIntentInForeground</span><span class=p>(</span><span class=n>intent</span><span class=p>:</span> <span class=n>Intent</span><span class=p>?)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>intent</span> <span class=o>==</span> <span class=k>null</span> <span class=o>||</span> <span class=o>!in</span><span class=n>tent</span><span class=p>.</span><span class=n>hasExtra</span><span class=p>(</span><span class=n>HEAPDUMP_FILE_EXTRA</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span> <span class=s2>&#34;HeapAnalyzerService received a null or empty intent, ignoring.&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Since we&#39;re running in the main process we should be careful not to impact it.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>Process</span><span class=p>.</span><span class=n>setThreadPriority</span><span class=p>(</span><span class=n>Process</span><span class=p>.</span><span class=n>THREAD_PRIORITY_BACKGROUND</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapDumpFile</span> <span class=p>=</span> <span class=n>intent</span><span class=p>.</span><span class=n>getSerializableExtra</span><span class=p>(</span><span class=n>HEAPDUMP_FILE_EXTRA</span><span class=p>)</span> <span class=k>as</span> <span class=n>File</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapDumpReason</span> <span class=p>=</span> <span class=n>intent</span><span class=p>.</span><span class=n>getStringExtra</span><span class=p>(</span><span class=n>HEAPDUMP_REASON_EXTRA</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapDumpDurationMillis</span> <span class=p>=</span> <span class=n>intent</span><span class=p>.</span><span class=n>getLongExtra</span><span class=p>(</span><span class=n>HEAPDUMP_DURATION_MILLIS_EXTRA</span><span class=p>,</span> <span class=p>-</span><span class=m>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>config</span> <span class=p>=</span> <span class=n>LeakCanary</span><span class=p>.</span><span class=n>config</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapAnalysis</span> <span class=p>=</span> <span class=k>if</span> <span class=p>(</span><span class=n>heapDumpFile</span><span class=p>.</span><span class=n>exists</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// 分析heapDump 文件
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>analyzeHeap</span><span class=p>(</span><span class=n>heapDumpFile</span><span class=p>,</span> <span class=n>config</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>missingFileFailure</span><span class=p>(</span><span class=n>heapDumpFile</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>fullHeapAnalysis</span> <span class=p>=</span> <span class=k>when</span> <span class=p>(</span><span class=n>heapAnalysis</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>HeapAnalysisSuccess</span> <span class=o>-&gt;</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>copy</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>dumpDurationMillis</span> <span class=p>=</span> <span class=n>heapDumpDurationMillis</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>metadata</span> <span class=p>=</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>metadata</span> <span class=p>+</span> <span class=p>(</span><span class=s2>&#34;Heap dump reason&#34;</span> <span class=n>to</span> <span class=n>heapDumpReason</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>HeapAnalysisFailure</span> <span class=o>-&gt;</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>copy</span><span class=p>(</span><span class=n>dumpDurationMillis</span> <span class=p>=</span> <span class=n>heapDumpDurationMillis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>onAnalysisProgress</span><span class=p>(</span><span class=n>REPORTING_HEAP_ANALYSIS</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//将分析结果回调给 onHeapAnalyzedListener
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>config</span><span class=p>.</span><span class=n>onHeapAnalyzedListener</span><span class=p>.</span><span class=n>onHeapAnalyzed</span><span class=p>(</span><span class=n>fullHeapAnalysis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>analyzeHeap</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpFile</span><span class=p>:</span> <span class=n>File</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>config</span><span class=p>:</span> <span class=n>Config</span>
+</span></span><span class=line><span class=cl><span class=p>):</span> <span class=n>HeapAnalysis</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>heapAnalyzer</span> <span class=p>=</span> <span class=n>HeapAnalyzer</span><span class=p>(</span><span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>proguardMappingReader</span> <span class=p>=</span> <span class=k>try</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>ProguardMappingReader</span><span class=p>(</span><span class=n>assets</span><span class=p>.</span><span class=k>open</span><span class=p>(</span><span class=n>PROGUARD_MAPPING_FILE_NAME</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>catch</span> <span class=p>(</span><span class=n>e</span><span class=p>:</span> <span class=n>IOException</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>null</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=n>heapAnalyzer</span><span class=p>.</span><span class=n>analyze</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>heapDumpFile</span> <span class=p>=</span> <span class=n>heapDumpFile</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>leakingObjectFinder</span> <span class=p>=</span> <span class=n>config</span><span class=p>.</span><span class=n>leakingObjectFinder</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>referenceMatchers</span> <span class=p>=</span> <span class=n>config</span><span class=p>.</span><span class=n>referenceMatchers</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>computeRetainedHeapSize</span> <span class=p>=</span> <span class=n>config</span><span class=p>.</span><span class=n>computeRetainedHeapSize</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>objectInspectors</span> <span class=p>=</span> <span class=n>config</span><span class=p>.</span><span class=n>objectInspectors</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>metadataExtractor</span> <span class=p>=</span> <span class=n>config</span><span class=p>.</span><span class=n>metadataExtractor</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>proguardMapping</span> <span class=p>=</span> <span class=n>proguardMappingReader</span><span class=o>?.</span><span class=n>readProguardMapping</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>查看 heapAnalyzer.analyzeHeap 方法：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>fun</span> <span class=nf>analyze</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpFile</span><span class=p>:</span> <span class=n>File</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>leakingObjectFinder</span><span class=p>:</span> <span class=n>LeakingObjectFinder</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>referenceMatchers</span><span class=p>:</span> <span class=n>List</span><span class=p>&lt;</span><span class=n>ReferenceMatcher</span><span class=p>&gt;</span> <span class=p>=</span> <span class=n>emptyList</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>  <span class=n>computeRetainedHeapSize</span><span class=p>:</span> <span class=n>Boolean</span> <span class=p>=</span> <span class=k>false</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>objectInspectors</span><span class=p>:</span> <span class=n>List</span><span class=p>&lt;</span><span class=n>ObjectInspector</span><span class=p>&gt;</span> <span class=p>=</span> <span class=n>emptyList</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>  <span class=n>metadataExtractor</span><span class=p>:</span> <span class=n>MetadataExtractor</span> <span class=p>=</span> <span class=n>MetadataExtractor</span><span class=p>.</span><span class=n>NO_OP</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>proguardMapping</span><span class=p>:</span> <span class=n>ProguardMapping</span><span class=p>?</span> <span class=p>=</span> <span class=k>null</span>
+</span></span><span class=line><span class=cl><span class=p>):</span> <span class=n>HeapAnalysis</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>analysisStartNanoTime</span> <span class=p>=</span> <span class=n>System</span><span class=p>.</span><span class=n>nanoTime</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(!</span><span class=n>heapDumpFile</span><span class=p>.</span><span class=n>exists</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=py>exception</span> <span class=p>=</span> <span class=n>IllegalArgumentException</span><span class=p>(</span><span class=s2>&#34;File does not exist: </span><span class=si>$heapDumpFile</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>HeapAnalysisFailure</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>heapDumpFile</span> <span class=p>=</span> <span class=n>heapDumpFile</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>createdAtTimeMillis</span> <span class=p>=</span> <span class=n>System</span><span class=p>.</span><span class=n>currentTimeMillis</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>      <span class=n>analysisDurationMillis</span> <span class=p>=</span> <span class=n>since</span><span class=p>(</span><span class=n>analysisStartNanoTime</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>exception</span> <span class=p>=</span> <span class=n>HeapAnalysisException</span><span class=p>(</span><span class=n>exception</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=k>try</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>listener</span><span class=p>.</span><span class=n>onAnalysisProgress</span><span class=p>(</span><span class=n>PARSING_HEAP_DUMP</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=py>sourceProvider</span> <span class=p>=</span> <span class=n>ConstantMemoryMetricsDualSourceProvider</span><span class=p>(</span><span class=n>FileSourceProvider</span><span class=p>(</span><span class=n>heapDumpFile</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//从文件中解析获取对象关系图结构 graph
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>//并获取图中的所有 GC roots 根节点
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>sourceProvider</span><span class=p>.</span><span class=n>openHeapGraph</span><span class=p>(</span><span class=n>proguardMapping</span><span class=p>).</span><span class=n>use</span> <span class=p>{</span> <span class=n>graph</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=c1>//创建 FindLeakInput 对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=k>val</span> <span class=py>helpers</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>FindLeakInput</span><span class=p>(</span><span class=n>graph</span><span class=p>,</span> <span class=n>referenceMatchers</span><span class=p>,</span> <span class=n>computeRetainedHeapSize</span><span class=p>,</span> <span class=n>objectInspectors</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>       <span class=c1>//查找内存泄漏对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>       <span class=k>val</span> <span class=py>result</span> <span class=p>=</span> <span class=n>helpers</span><span class=p>.</span><span class=n>analyzeGraph</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>metadataExtractor</span><span class=p>,</span> <span class=n>leakingObjectFinder</span><span class=p>,</span> <span class=n>heapDumpFile</span><span class=p>,</span> <span class=n>analysisStartNanoTime</span>
+</span></span><span class=line><span class=cl>      <span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=k>val</span> <span class=py>lruCacheStats</span> <span class=p>=</span> <span class=p>(</span><span class=n>graph</span> <span class=k>as</span> <span class=n>HprofHeapGraph</span><span class=p>).</span><span class=n>lruCacheStats</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>      <span class=k>val</span> <span class=py>randomAccessStats</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;RandomAccess[&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;bytes=</span><span class=si>${sourceProvider.randomAccessByteReads}</span><span class=s2>,&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;reads=</span><span class=si>${sourceProvider.randomAccessReadCount}</span><span class=s2>,&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;travel=</span><span class=si>${sourceProvider.randomAccessByteTravel}</span><span class=s2>,&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;range=</span><span class=si>${sourceProvider.byteTravelRange}</span><span class=s2>,&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;size=</span><span class=si>${heapDumpFile.length()}</span><span class=s2>&#34;</span> <span class=p>+</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;]&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=k>val</span> <span class=py>stats</span> <span class=p>=</span> <span class=s2>&#34;</span><span class=si>$lruCacheStats</span><span class=s2> </span><span class=si>$randomAccessStats</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>result</span><span class=p>.</span><span class=n>copy</span><span class=p>(</span><span class=n>metadata</span> <span class=p>=</span> <span class=n>result</span><span class=p>.</span><span class=n>metadata</span> <span class=p>+</span> <span class=p>(</span><span class=s2>&#34;Stats&#34;</span> <span class=n>to</span> <span class=n>stats</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>catch</span> <span class=p>(</span><span class=n>exception</span><span class=p>:</span> <span class=n>Throwable</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>HeapAnalysisFailure</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>heapDumpFile</span> <span class=p>=</span> <span class=n>heapDumpFile</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>createdAtTimeMillis</span> <span class=p>=</span> <span class=n>System</span><span class=p>.</span><span class=n>currentTimeMillis</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>      <span class=n>analysisDurationMillis</span> <span class=p>=</span> <span class=n>since</span><span class=p>(</span><span class=n>analysisStartNanoTime</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>exception</span> <span class=p>=</span> <span class=n>HeapAnalysisException</span><span class=p>(</span><span class=n>exception</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>FindLeakInput</span><span class=p>.</span><span class=n>analyzeGraph</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>metadataExtractor</span><span class=p>:</span> <span class=n>MetadataExtractor</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>leakingObjectFinder</span><span class=p>:</span> <span class=n>LeakingObjectFinder</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>heapDumpFile</span><span class=p>:</span> <span class=n>File</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>analysisStartNanoTime</span><span class=p>:</span> <span class=n>Long</span>
+</span></span><span class=line><span class=cl><span class=p>):</span> <span class=n>HeapAnalysisSuccess</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>listener</span><span class=p>.</span><span class=n>onAnalysisProgress</span><span class=p>(</span><span class=n>EXTRACTING_METADATA</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>metadata</span> <span class=p>=</span> <span class=n>metadataExtractor</span><span class=p>.</span><span class=n>extractMetadata</span><span class=p>(</span><span class=n>graph</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//通过过滤 graph 中的 KeyedWeakReference 类型对象来
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>//找到对应的内存泄漏对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>retainedClearedWeakRefCount</span> <span class=p>=</span> <span class=n>KeyedWeakReferenceFinder</span><span class=p>.</span><span class=n>findKeyedWeakReferences</span><span class=p>(</span><span class=n>graph</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>.</span><span class=n>filter</span> <span class=p>{</span> <span class=k>it</span><span class=p>.</span><span class=n>isRetained</span> <span class=o>&amp;&amp;</span> <span class=p>!</span><span class=k>it</span><span class=p>.</span><span class=n>hasReferent</span> <span class=p>}.</span><span class=n>count</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// This should rarely happens, as we generally remove all cleared weak refs right before a heap
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// dump.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>metadataWithCount</span> <span class=p>=</span> <span class=k>if</span> <span class=p>(</span><span class=n>retainedClearedWeakRefCount</span> <span class=p>&gt;</span> <span class=m>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>metadata</span> <span class=p>+</span> <span class=p>(</span><span class=s2>&#34;Count of retained yet cleared&#34;</span> <span class=n>to</span> <span class=s2>&#34;</span><span class=si>$retainedClearedWeakRefCount</span><span class=s2> KeyedWeakReference instances&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>metadata</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>listener</span><span class=p>.</span><span class=n>onAnalysisProgress</span><span class=p>(</span><span class=n>FINDING_RETAINED_OBJECTS</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>leakingObjectIds</span> <span class=p>=</span> <span class=n>leakingObjectFinder</span><span class=p>.</span><span class=n>findLeakingObjectIds</span><span class=p>(</span><span class=n>graph</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//计算内存泄漏对象到 GC roots 的路径
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=err>(</span><span class=py>applicationLeaks</span><span class=p>,</span> <span class=n>libraryLeaks</span><span class=p>,</span> <span class=n>unreachableObjects</span><span class=p>)</span> <span class=p>=</span> <span class=n>findLeaks</span><span class=p>(</span><span class=n>leakingObjectIds</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=n>HeapAnalysisSuccess</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>heapDumpFile</span> <span class=p>=</span> <span class=n>heapDumpFile</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>createdAtTimeMillis</span> <span class=p>=</span> <span class=n>System</span><span class=p>.</span><span class=n>currentTimeMillis</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>    <span class=n>analysisDurationMillis</span> <span class=p>=</span> <span class=n>since</span><span class=p>(</span><span class=n>analysisStartNanoTime</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>metadata</span> <span class=p>=</span> <span class=n>metadataWithCount</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>applicationLeaks</span> <span class=p>=</span> <span class=n>applicationLeaks</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>libraryLeaks</span> <span class=p>=</span> <span class=n>libraryLeaks</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>unreachableObjects</span> <span class=p>=</span> <span class=n>unreachableObjects</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>FindLeakInput</span><span class=p>.</span><span class=n>findLeaks</span><span class=p>(</span><span class=n>leakingObjectIds</span><span class=p>:</span> <span class=n>Set</span><span class=p>&lt;</span><span class=n>Long</span><span class=p>&gt;):</span> <span class=n>LeaksAndUnreachableObjects</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>pathFinder</span> <span class=p>=</span> <span class=n>PathFinder</span><span class=p>(</span><span class=n>graph</span><span class=p>,</span> <span class=n>listener</span><span class=p>,</span> <span class=n>referenceMatchers</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>//计算并获取目标对象到 GC roots 的最短路径
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=py>pathFindingResults</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>pathFinder</span><span class=p>.</span><span class=n>findPathsFromGcRoots</span><span class=p>(</span><span class=n>leakingObjectIds</span><span class=p>,</span> <span class=n>computeRetainedHeapSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>unreachableObjects</span> <span class=p>=</span> <span class=n>findUnreachableObjects</span><span class=p>(</span><span class=n>pathFindingResults</span><span class=p>,</span> <span class=n>leakingObjectIds</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>shortestPaths</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>deduplicateShortestPaths</span><span class=p>(</span><span class=n>pathFindingResults</span><span class=p>.</span><span class=n>pathsToLeakingObjects</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>inspectedObjectsByPath</span> <span class=p>=</span> <span class=n>inspectObjects</span><span class=p>(</span><span class=n>shortestPaths</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>retainedSizes</span> <span class=p>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=n>pathFindingResults</span><span class=p>.</span><span class=n>dominatorTree</span> <span class=o>!=</span> <span class=k>null</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>computeRetainedSizes</span><span class=p>(</span><span class=n>inspectedObjectsByPath</span><span class=p>,</span> <span class=n>pathFindingResults</span><span class=p>.</span><span class=n>dominatorTree</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>null</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=err>(</span><span class=py>applicationLeaks</span><span class=p>,</span> <span class=n>libraryLeaks</span><span class=p>)</span> <span class=p>=</span> <span class=n>buildLeakTraces</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>shortestPaths</span><span class=p>,</span> <span class=n>inspectedObjectsByPath</span><span class=p>,</span> <span class=n>retainedSizes</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=n>LeaksAndUnreachableObjects</span><span class=p>(</span><span class=n>applicationLeaks</span><span class=p>,</span> <span class=n>libraryLeaks</span><span class=p>,</span> <span class=n>unreachableObjects</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#展示通知><h2 id=展示通知><span class=hanchor arialabel=Anchor># </span>展示通知</h2></a><p>回到 HeapAnalyzerService 中，analyzeHeap 方法得到分析结果后，会将结果回调给 onHeapAnalyzedListener。</p><p>这里 onHeapAnalyzedListener 的唯一实现类为 DefaultOnHeapAnalyzedListener：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>override</span> <span class=k>fun</span> <span class=nf>onHeapAnalyzed</span><span class=p>(</span><span class=n>heapAnalysis</span><span class=p>:</span> <span class=n>HeapAnalysis</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>SharkLog</span><span class=p>.</span><span class=n>d</span> <span class=p>{</span> <span class=s2>&#34;</span><span class=se>\u200B\n</span><span class=si>${LeakTraceWrapper.wrap(heapAnalysis.toString(), 120)}</span><span class=s2>&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>db</span> <span class=p>=</span> <span class=n>LeaksDbHelper</span><span class=p>(</span><span class=n>application</span><span class=p>).</span><span class=n>writableDatabase</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>id</span> <span class=p>=</span> <span class=n>HeapAnalysisTable</span><span class=p>.</span><span class=n>insert</span><span class=p>(</span><span class=n>db</span><span class=p>,</span> <span class=n>heapAnalysis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>db</span><span class=p>.</span><span class=n>releaseReference</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=err>(</span><span class=py>contentTitle</span><span class=p>,</span> <span class=n>screenToShow</span><span class=p>)</span> <span class=p>=</span> <span class=k>when</span> <span class=p>(</span><span class=n>heapAnalysis</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>HeapAnalysisFailure</span> <span class=o>-&gt;</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_analysis_failed</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span> <span class=n>to</span> <span class=n>HeapAnalysisFailureScreen</span><span class=p>(</span><span class=n>id</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>is</span> <span class=n>HeapAnalysisSuccess</span> <span class=o>-&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>val</span> <span class=py>retainedObjectCount</span> <span class=p>=</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>allLeaks</span><span class=p>.</span><span class=n>sumBy</span> <span class=p>{</span> <span class=k>it</span><span class=p>.</span><span class=n>leakTraces</span><span class=p>.</span><span class=n>size</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=k>val</span> <span class=py>leakTypeCount</span> <span class=p>=</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>applicationLeaks</span><span class=p>.</span><span class=n>size</span> <span class=p>+</span> <span class=n>heapAnalysis</span><span class=p>.</span><span class=n>libraryLeaks</span><span class=p>.</span><span class=n>size</span>
+</span></span><span class=line><span class=cl>      <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_analysis_success_notification</span><span class=p>,</span> <span class=n>retainedObjectCount</span><span class=p>,</span> <span class=n>leakTypeCount</span>
+</span></span><span class=line><span class=cl>      <span class=p>)</span> <span class=n>to</span> <span class=n>HeapDumpScreen</span><span class=p>(</span><span class=n>id</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=n>InternalLeakCanary</span><span class=p>.</span><span class=n>formFactor</span> <span class=o>==</span> <span class=n>TV</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>showToast</span><span class=p>(</span><span class=n>heapAnalysis</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>printIntentInfo</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//展示通知
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>showNotification</span><span class=p>(</span><span class=n>screenToShow</span><span class=p>,</span> <span class=n>contentTitle</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>最后将结果通过通知的方式展示出来：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-kotlin data-lang=kotlin><span class=line><span class=cl><span class=k>private</span> <span class=k>fun</span> <span class=nf>showNotification</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>screenToShow</span><span class=p>:</span> <span class=n>Screen</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>contentTitle</span><span class=p>:</span> <span class=n>String</span>
+</span></span><span class=line><span class=cl><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>pendingIntent</span> <span class=p>=</span> <span class=n>LeakActivity</span><span class=p>.</span><span class=n>createPendingIntent</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>application</span><span class=p>,</span> <span class=n>arrayListOf</span><span class=p>(</span><span class=n>HeapDumpsScreen</span><span class=p>(),</span> <span class=n>screenToShow</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=py>contentText</span> <span class=p>=</span> <span class=n>application</span><span class=p>.</span><span class=n>getString</span><span class=p>(</span><span class=n>R</span><span class=p>.</span><span class=n>string</span><span class=p>.</span><span class=n>leak_canary_notification_message</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>Notifications</span><span class=p>.</span><span class=n>showNotification</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>application</span><span class=p>,</span> <span class=n>contentTitle</span><span class=p>,</span> <span class=n>contentText</span><span class=p>,</span> <span class=n>pendingIntent</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>R</span><span class=p>.</span><span class=n>id</span><span class=p>.</span><span class=n>leak_canary_notification_analysis_result</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>LEAKCANARY_MAX</span>
+</span></span><span class=line><span class=cl>  <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#总结><h2 id=总结><span class=hanchor arialabel=Anchor># </span>总结</h2></a><p>总结下 LeakCanary 对于 Activity 内存泄漏分析过程：</p><ol><li>初始化 LeakCanary 需要的对象</li><li>注册监听 Activity 生命周期 onDestroy 事件</li><li>在 Activity 的 onDestroy 事件回调后，创建 KeyedWeakReference 对象，并关联 ReferenceQueue</li><li>延时 5 秒检查目标对象是否回收</li><li>未回收则开启服务，dump heap 获取内存快照 hprof 文件</li><li>解析 hprof 文件根据 KeyedWeakReference 类型过滤找到内存泄漏对象</li><li>计算对象到 GC roots 的最短路径，并合并所有最短路径为一棵树</li><li>输出分析结果，并根据分析结果通过通知的方式展示出来</li></ol><p><img src=https://www.guanpj.top//static/boxcnwmpx7Q5W1o675lAd1Pu2mb.png width=auto alt></p><p><img src=https://www.guanpj.top//static/boxcnjBHdRGELT4dbRJad4bBFwg.jpeg width=auto alt></p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>
