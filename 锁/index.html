@@ -1,0 +1,447 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=description content="锁 锁的分类  偏向锁/轻量级锁/重量级锁 Java SE 1.6 为了减少获得锁和释放锁带来的性能消耗，引入了“偏向锁”和“轻量级锁”，在 Java SE 1.6 中，锁一共有 4 种状态，级别从低到高依次是：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几个状态会随着竞争情况逐渐升级但不能降级。
+这些状态被记录在对象头中的 mark word 中。
+偏向锁 如果自始至终，对于这把锁都不存在竞争，那么其实就没必要上锁，只需要打个标记就行了，这就是偏向锁的思想。一个对象被初始化后，还没有任何线程来获取它的锁时，那么它就是可偏向的，当有第一个线程来访问它并尝试获取锁的时候，它就将这个线程记录下来，以后如果尝试获取锁的线程正是偏向锁的拥有者，就可以直接获得锁，开销很小，性能最好。"><meta property="og:title" content><meta property="og:description" content="锁 锁的分类  偏向锁/轻量级锁/重量级锁 Java SE 1.6 为了减少获得锁和释放锁带来的性能消耗，引入了“偏向锁”和“轻量级锁”，在 Java SE 1.6 中，锁一共有 4 种状态，级别从低到高依次是：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几个状态会随着竞争情况逐渐升级但不能降级。
+这些状态被记录在对象头中的 mark word 中。
+偏向锁 如果自始至终，对于这把锁都不存在竞争，那么其实就没必要上锁，只需要打个标记就行了，这就是偏向锁的思想。一个对象被初始化后，还没有任何线程来获取它的锁时，那么它就是可偏向的，当有第一个线程来访问它并尝试获取锁的时候，它就将这个线程记录下来，以后如果尝试获取锁的线程正是偏向锁的拥有者，就可以直接获得锁，开销很小，性能最好。"><meta property="og:type" content="website"><meta property="og:image" content="https://www.guanpj.top/icon.png"><meta property="og:url" content="https://www.guanpj.top/%E9%94%81/"><meta property="og:width" content="200"><meta property="og:height" content="200"><meta name=twitter:card content="summary"><meta name=twitter:title content><meta name=twitter:description content="锁 锁的分类  偏向锁/轻量级锁/重量级锁 Java SE 1.6 为了减少获得锁和释放锁带来的性能消耗，引入了“偏向锁”和“轻量级锁”，在 Java SE 1.6 中，锁一共有 4 种状态，级别从低到高依次是：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几个状态会随着竞争情况逐渐升级但不能降级。
+这些状态被记录在对象头中的 mark word 中。
+偏向锁 如果自始至终，对于这把锁都不存在竞争，那么其实就没必要上锁，只需要打个标记就行了，这就是偏向锁的思想。一个对象被初始化后，还没有任何线程来获取它的锁时，那么它就是可偏向的，当有第一个线程来访问它并尝试获取锁的时候，它就将这个线程记录下来，以后如果尝试获取锁的线程正是偏向锁的拥有者，就可以直接获得锁，开销很小，性能最好。"><meta name=twitter:image content="https://www.guanpj.top/icon.png"><meta name=twitter:site content="guanpj"><title>🌻 guanpjの花园 🌵</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.guanpj.top//icon.png><link href=https://www.guanpj.top/styles.0452046239b15cdfa822e3a8fa41b16d.min.css rel=stylesheet><link href=https://www.guanpj.top/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.guanpj.top/js/darkmode.b65338f159f3469fa8b9dc7675293fba.min.js></script>
+<script src=https://www.guanpj.top/js/util.a0ccf91e1937fe761a74da4946452710.min.js></script>
+<link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css as=style onload='this.onload=null,this.rel="stylesheet"' integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.2/dist/contrib/copy-tex.min.js integrity=sha384-ww/583aHhxWkz5DEVn6OKtNiIaLi2iBRNZXfJRiY1Ai7tnJ9UXpEsyvOITVpTl4A crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/core@1.2.1></script>
+<script src=https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.2.1></script>
+<script async src=https://www.guanpj.top/js/popover.aa9bc99c7c38d3ae9538f218f1416adb.min.js></script>
+<script defer src=https://www.guanpj.top/js/code-title.ce4a43f09239a9efb48fee342e8ef2df.min.js></script>
+<script defer src=https://www.guanpj.top/js/clipboard.2913da76d3cb21c5deaa4bae7da38c9f.min.js></script>
+<script defer src=https://www.guanpj.top/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const SEARCH_ENABLED=!1,LATEX_ENABLED=!0,PRODUCTION=!0,BASE_URL="https://www.guanpj.top/",fetchData=Promise.all([fetch("https://www.guanpj.top/indices/linkIndex.9fddd62f4f9253cd4caef08e6b155b10.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.guanpj.top/indices/contentIndex.749642a3d9a9cad152c1621e3413fc5e.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addTitleToCodeBlocks(),addCollapsibleCallouts(),initPopover("https://www.guanpj.top",!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.guanpj.top",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}var i=document.getElementsByClassName("mermaid");i.length>0&&import("https://unpkg.com/mermaid@9/dist/mermaid.esm.min.mjs").then(e=>{e.default.init()});function a(n){const e=n.target,t=e.className.split(" "),s=t.includes("broken"),o=t.includes("internal-link");plausible("Link Click",{props:{href:e.href,broken:s,internal:o,graph:!1}})}const r=document.querySelectorAll("a");for(link of r)link.className.includes("root-title")&&link.addEventListener("click",a,{once:!0})},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],macros:{'’':"'"},throwOnError:!1})}</script><script type=module>
+    import { attachSPARouting } from "https:\/\/www.guanpj.top\/js\/router.d6fe6bd821db9ea97f9aeefae814d8e7.min.js"
+    attachSPARouting(init, render)
+  </script><script defer data-domain=www.guanpj.top src=https://plausible.io/js/script.js></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script></head><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=Search placeholder="Search for something..."><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.guanpj.top/js/full-text-search.e6e2e0c213187ca0c703d6e2c7a77fcd.min.js></script><div class=singlePage><header><h1 id=page-title><a class=root-title href=https://www.guanpj.top/>🌻 guanpjの花园 🌵</a></h1><div class=spacer></div><div id=search-icon><p>Search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>Last updated
+Unknown</p><ul class=tags></ul><aside class=mainTOC><details><summary>Table of Contents</summary><nav id=TableOfContents><ol><li><a href=#锁>锁</a></li><li><a href=#锁的分类>锁的分类</a><ol><li><ol><li><a href=#偏向锁轻量级锁重量级锁>偏向锁/轻量级锁/重量级锁</a><ol><li><a href=#strong偏向锁strong><strong>偏向锁</strong></a></li><li><a href=#em轻量级锁em><em>轻量级锁</em></a></li><li><a href=#em重量级锁em><em>重量级锁</em></a></li><li><a href=#strong对比strong><strong>对比</strong></a></li></ol></li><li><a href=#可重入锁非可重入锁>可重入锁/非可重入锁</a></li><li><a href=#共享锁独占锁排他锁>共享锁/独占锁（排他锁）</a></li><li><a href=#公平锁非公平锁>公平锁/非公平锁</a><ol><li><a href=#em概念em><em>概念</em></a></li><li><a href=#em原理em><em>原理</em></a></li><li><a href=#em对比em><em>对比</em></a></li></ol></li><li><a href=#悲观锁乐观锁>悲观锁/乐观锁</a><ol><li><a href=#概念>概念</a></li><li><a href=#对比>对比</a></li></ol></li><li><a href=#自旋锁非自旋锁>自旋锁/非自旋锁</a></li><li><a href=#自旋的利与弊>自旋的利与弊</a><ol><li><a href=#适用场景>适用场景</a></li></ol></li><li><a href=#可中断锁不可中断锁>可中断锁/不可中断锁</a></li></ol></li></ol></li><li><a href=#synchronized-实现原理>synchronized 实现原理</a><ol><li><a href=#同步代码块>同步代码块</a></li><li><a href=#同步方法>同步方法</a></li></ol></li><li><a href=#lock-类>Lock 类</a><ol><li><a href=#简介>简介</a></li><li><a href=#方法纵览>方法纵览</a><ol><li><ol><li><a href=#lock>lock()</a></li><li><a href=#trylock>tryLock()</a></li><li><a href=#trylocklong-time-timeunit-unit>tryLock(long time, TimeUnit unit)</a></li><li><a href=#lockinterruptibly>lockInterruptibly()</a></li><li><a href=#unlock>unlock()</a></li><li><a href=#newcondition>newCondition()</a></li></ol></li></ol></li></ol></li><li><a href=#读写锁>读写锁</a><ol><li><ol><li><ol><li><a href=#strong使用示例strong><strong>使用示例</strong></a></li><li><a href=#适用场景-1>适用场景</a></li></ol></li></ol></li></ol></li><li><a href=#jvm-对锁的优化>JVM 对锁的优化</a><ol><li><ol><li><ol><li><a href=#自适应的自旋锁>自适应的自旋锁</a></li><li><a href=#锁消除>锁消除</a></li><li><a href=#锁粗化>锁粗化</a></li><li><a href=#锁升级>锁升级</a></li></ol></li></ol></li></ol></li></ol></nav></details></aside><a href=#锁><h1 id=锁><span class=hanchor arialabel=Anchor># </span>锁</h1></a><a href=#锁的分类><h1 id=锁的分类><span class=hanchor arialabel=Anchor># </span>锁的分类</h1></a><p><img src=https://www.guanpj.top//static/boxcnBt3FoecA3yhBUjuGX1J5Qb.png width=auto alt></p><a href=#偏向锁轻量级锁重量级锁><h3 id=偏向锁轻量级锁重量级锁><span class=hanchor arialabel=Anchor># </span>偏向锁/轻量级锁/重量级锁</h3></a><p>Java SE 1.6 为了减少获得锁和释放锁带来的性能消耗，引入了“偏向锁”和“轻量级锁”，在 Java SE 1.6 中，锁一共有 4 种状态，级别从低到高依次是：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几个状态会随着竞争情况逐渐升级但不能降级。</p><p>这些状态被记录在对象头中的 mark word 中。</p><a href=#strong偏向锁strong><h4 id=strong偏向锁strong><span class=hanchor arialabel=Anchor># </span><strong>偏向锁</strong></h4></a><p>如果自始至终，对于这把锁都不存在竞争，那么其实就没必要上锁，只需要打个标记就行了，这就是偏向锁的思想。一个对象被初始化后，还没有任何线程来获取它的锁时，那么它就是可偏向的，当有第一个线程来访问它并尝试获取锁的时候，它就将这个线程记录下来，以后如果尝试获取锁的线程正是偏向锁的拥有者，就可以直接获得锁，开销很小，性能最好。</p><a href=#em轻量级锁em><h4 id=em轻量级锁em><span class=hanchor arialabel=Anchor># </span><em>轻量级锁</em></h4></a><p>JVM 开发者发现在很多情况下，synchronized 中的代码是被多个线程交替执行的，而不是同时执行的，也就是说并不存在实际的竞争，或者是只有短时间的锁竞争，用 CAS 就可以解决，这种情况下，用完全互斥的重量级锁是没必要的。轻量级锁是指当锁原来是偏向锁的时候，被另一个线程访问，说明存在竞争，那么偏向锁就会升级为轻量级锁，线程会通过自旋的形式尝试获取锁，而不会陷入阻塞。</p><a href=#em重量级锁em><h4 id=em重量级锁em><span class=hanchor arialabel=Anchor># </span><em>重量级锁</em></h4></a><p>重量级锁是互斥锁，它是利用操作系统的同步机制实现的，所以开销相对比较大。当多个线程直接有实际竞争，且锁竞争时间长的时候，轻量级锁不能满足需求，锁就会膨胀为重量级锁。重量级锁会让其他申请却拿不到锁的线程进入阻塞状态。</p><a href=#strong对比strong><h4 id=strong对比strong><span class=hanchor arialabel=Anchor># </span><strong>对比</strong></h4></a><p><img src=https://www.guanpj.top//static/boxcnTeIoIXUviZ0czdylVbPIIf.png width=auto alt></p><a href=#可重入锁非可重入锁><h3 id=可重入锁非可重入锁><span class=hanchor arialabel=Anchor># </span>可重入锁/非可重入锁</h3></a><p>可重入锁指的是线程当前已经持有这把锁了，能在不释放这把锁的情况下，再次获取这把锁。同理，不可重入锁指的是虽然线程当前持有了这把锁，但是如果想再次获取这把锁，也必须要先释放锁后才能再次尝试获取。</p><p>对于可重入锁而言，最典型的就是 ReentrantLock 了，正如它的名字一样，reentrant 的意思就是可重入，它也是 Lock 接口最主要的一个实现类。synchronized 锁也属于可重入锁。</p><a href=#共享锁独占锁排他锁><h3 id=共享锁独占锁排他锁><span class=hanchor arialabel=Anchor># </span>共享锁/独占锁（排他锁）</h3></a><p>共享锁指的是我们同一把锁可以被多个线程同时获得；而独占锁（排他锁）指的就是，这把锁只能同时被一个线程获得。读写锁就最好地诠释了共享锁和独占锁的理念。读写锁中的读锁，是共享锁，而写锁是独占锁。读锁可以被同时读，可以同时被多个线程持有，而写锁最多只能同时被一个线程持有。</p><a href=#公平锁非公平锁><h3 id=公平锁非公平锁><span class=hanchor arialabel=Anchor># </span>公平锁/非公平锁</h3></a><a href=#em概念em><h4 id=em概念em><span class=hanchor arialabel=Anchor># </span><em>概念</em></h4></a><p>公平锁之公平的含义在于如果线程现在拿不到这把锁，那么线程就都会进入等待，开始排队，在等待队列里等待时间长的线程会优先拿到这把锁，有先来先得的意思。而非公平锁就不那么“完美”了，它会在一定情况下，忽略掉已经在排队的线程，发生插队现象。</p><p>那么什么“一定情况下”呢？假设当前线程在请求获取锁的时候，恰巧前一个持有锁的线程释放了这把锁，那么当前申请锁的线程就可以不顾已经等待的线程而选择立刻插队。但是如果当前线程请求的时候，前一个线程并没有在那一时刻释放锁，那么当前线程还是一样会进入等待队列。</p><a href=#em原理em><h4 id=em原理em><span class=hanchor arialabel=Anchor># </span><em>原理</em></h4></a><p>分析公平和非公平锁的源码，具体看下它们是怎样实现的：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>ReentrantLock</span> <span class=kd>implements</span> <span class=n>Lock</span><span class=o>,</span>   
+</span></span><span class=line><span class=cl>        <span class=n>java</span><span class=o>.</span><span class=na>io</span><span class=o>.</span><span class=na>Serializable</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//ReentrantLock 类包含一个 Sync 类的成员变量
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>private</span> <span class=kd>final</span> <span class=n>Sync</span> <span class=n>sync</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>//Sync 类的定义
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>abstract</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>Sync</span> <span class=kd>extends</span> <span class=n>AbstractQueuedSynchronizer</span> <span class=o>{...}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>//Sync 有公平锁 FairSync 和非公平锁 NonfairSync两个子类
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>static</span> <span class=kd>final</span> <span class=kd>class</span> <span class=nc>NonfairSync</span> <span class=kd>extends</span> <span class=n>Sync</span> <span class=o>{...}</span>
+</span></span><span class=line><span class=cl><span class=kd>static</span> <span class=kd>final</span> <span class=kd>class</span> <span class=nc>FairSync</span> <span class=kd>extends</span> <span class=n>Sync</span> <span class=o>{...}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>//公平锁与非公平锁的加锁方法
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>protected</span> <span class=kd>final</span> <span class=kt>boolean</span> <span class=nf>tryAcquire</span><span class=o>(</span><span class=kt>int</span> <span class=n>acquires</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>final</span> <span class=n>Thread</span> <span class=n>current</span> <span class=o>=</span> <span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=kt>int</span> <span class=n>c</span> <span class=o>=</span> <span class=n>getState</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>(</span><span class=n>c</span> <span class=o>==</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(!</span><span class=n>hasQueuedPredecessors</span><span class=o>()</span> <span class=o>&amp;&amp;</span> <span class=c1>//只有公平锁在这里判断了队列是否为空
+</span></span></span><span class=line><span class=cl><span class=c1></span>                <span class=n>compareAndSetState</span><span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>acquires</span><span class=o>))</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>setExclusiveOwnerThread</span><span class=o>(</span><span class=n>current</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>true</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=n>current</span> <span class=o>==</span> <span class=n>getExclusiveOwnerThread</span><span class=o>())</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=kt>int</span> <span class=n>nextc</span> <span class=o>=</span> <span class=n>c</span> <span class=o>+</span> <span class=n>acquires</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>nextc</span> <span class=o>&lt;</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>throw</span> <span class=k>new</span> <span class=n>Error</span><span class=o>(</span><span class=s>&#34;Maximum lock count exceeded&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=n>setState</span><span class=o>(</span><span class=n>nextc</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>true</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=kc>false</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>平锁与非公平锁的 lock() 方法唯一的区别就在于公平锁在获取锁时多了一个限制条件：hasQueuedPredecessors() 为 false，这个方法就是判断在等待队列中是否已经有线程在排队了。这也就是公平锁和非公平锁的核心区别。</p><p><strong>如果是公平锁，那么一旦已经有线程在排队了，当前线程就不再尝试获取锁；对于非公平锁而言，无论是否已经有线程在排队，都会尝试获取一下锁，获取不到的话，再去排队。</strong></p><a href=#em对比em><h4 id=em对比em><span class=hanchor arialabel=Anchor># </span><em>对比</em></h4></a><table><thead><tr><th>类型</th><th>优点</th><th>缺点</th></tr></thead><tbody><tr><td>公平锁</td><td>各线程公平竞争，每个线程等待一段时间后都有机会执行</td><td>更慢，吞入量更小</td></tr><tr><td>非公平锁</td><td>更快，吞吐量更大</td><td>有可能产生饥饿，某些线程可能始终得不到机会执行</td></tr></tbody></table><a href=#悲观锁乐观锁><h3 id=悲观锁乐观锁><span class=hanchor arialabel=Anchor># </span>悲观锁/乐观锁</h3></a><a href=#概念><h4 id=概念><span class=hanchor arialabel=Anchor># </span>概念</h4></a><p>悲观锁的概念是在获取资源之前，必须先拿到锁，以便达到“独占”的状态，当前线程在操作资源的时候，其他线程由于不能拿到锁，所以其他线程不能来影响我。而乐观锁恰恰相反，它并不要求在获取资源前拿到锁，也不会锁住资源；相反，乐观锁利用 CAS 理念，在不独占资源的情况下，完成了对资源的修改。</p><p>Java 中悲观锁的实现包括 synchronized 关键字和 Lock 相关类等，我们以 Lock 接口为例，例如 Lock 的实现类 ReentrantLock，类中的 lock() 等方法就是执行加锁，而 unlock() 方法是执行解锁。处理资源之前必须要先加锁并拿到锁，等到处理完了之后再解开锁，这就是非常典型的悲观锁思想。</p><p>乐观锁的典型案例就是原子类，例如 AtomicInteger 在更新数据时，就使用了乐观锁的思想，多个线程可以同时操作同一个原子变量。</p><a href=#对比><h4 id=对比><span class=hanchor arialabel=Anchor># </span>对比</h4></a><table><thead><tr><th>类型</th><th>优点</th><th>缺点</th><th>使用场景</th></tr></thead><tbody><tr><td>乐观锁</td><td>开销比较锁小</td><td>如果一直拿不到锁，或者并发量大，竞争激烈，导致不停重试，消耗的资源也会越来越多</td><td>大部分是读取，少部分是修改，或者虽然读写都很多，但是并发并不激烈的场景下，乐观锁不加锁的特点能让性能大幅提高。</td></tr><tr><td>悲观锁</td><td>开销固定，就算一直拿不到锁，也不会造成额外的影响</td><td>操作比较重量级，不能多个线程并行执行，还会有上下文切换等动作造成性能问题</td><td>并发写入多、临界区代码复杂、竞争激烈等场景，可以避免大量的无用的反复尝试等消耗。</td></tr></tbody></table><a href=#自旋锁非自旋锁><h3 id=自旋锁非自旋锁><span class=hanchor arialabel=Anchor># </span>自旋锁/非自旋锁</h3></a><p>自旋锁的理念是如果线程现在拿不到锁，并不直接陷入阻塞或者释放 CPU 资源，而是开始利用循环，不停地尝试获取锁，这个循环过程被形象地比喻为“自旋”，就像是线程在“自我旋转”。</p><p>相反，非自旋锁的理念就是没有自旋的过程，如果拿不到锁就直接放弃，或者进行其他的处理逻辑，例如去排队、陷入阻塞等。CPU 就可以在这段时间去做很多其他的事情，直到之前持有这把锁的线程释放了锁，于是 CPU 再把之前的线程恢复回来，让这个线程再去尝试获取这把锁。如果再次失败，就再次让线程休眠，如果成功，一样可以成功获取到同步资源的锁。</p><a href=#自旋的利与弊><h3 id=自旋的利与弊><span class=hanchor arialabel=Anchor># </span>自旋的利与弊</h3></a><p>首先，阻塞和唤醒线程都是需要高昂的开销的，如果同步代码块中的内容不复杂，那么可能转换线程带来的开销比实际业务代码执行的开销还要大。</p><p>在很多场景下，同步代码块的内容并不多，所以需要的执行时间也很短，如果仅仅为了这点时间就去切换线程状态，那么其实不如让线程不切换状态，而是让它自旋地尝试获取锁，等待其他线程释放锁，有时只需要稍等一下，就可以避免上下文切换等开销，提高了效率。</p><p>用一句话总结自旋锁的好处，那就是自旋锁用循环去不停地尝试获取锁，让线程始终处于 Runnable 状态，节省了线程状态切换带来的开销。</p><p>它最大的缺点就在于虽然避免了线程切换的开销，但是它在避免线程切换开销的同时也带来了新的开销，因为它需要不停得去尝试获取锁。如果这把锁一直不能被释放，那么这种尝试只是无用的尝试，会白白浪费处理器资源。也就是说，虽然一开始自旋锁的开销低于线程切换，但是随着时间的增加，这种开销也是水涨船高，后期甚至会超过线程切换的开销，得不偿失。</p><a href=#适用场景><h4 id=适用场景><span class=hanchor arialabel=Anchor># </span>适用场景</h4></a><p>首先，自旋锁适用于并发度不是特别高的场景，以及临界区比较短小的情况，这样我们可以利用避免线程切换来提高效率。</p><p>如果临界区很大，线程一旦拿到锁，很久才会释放的话，那就不合适用自旋锁，因为自旋会一直占用 CPU 却无法拿到锁，白白消耗资源。</p><a href=#可中断锁不可中断锁><h3 id=可中断锁不可中断锁><span class=hanchor arialabel=Anchor># </span>可中断锁/不可中断锁</h3></a><p>在 Java 中，synchronized 关键字修饰的锁代表的是不可中断锁，一旦线程申请了锁，就没有回头路了，只能等到拿到锁以后才能进行其他的逻辑处理。而我们的 ReentrantLock 是一种典型的可中断锁，例如使用 lockInterruptibly 方法在获取锁的过程中，突然不想获取了，那么也可以在中断之后去做其他的事情，不需要一直傻等到获取到锁才离开。</p><a href=#synchronized-实现原理><h1 id=synchronized-实现原理><span class=hanchor arialabel=Anchor># </span>synchronized 实现原理</h1></a><a href=#同步代码块><h2 id=同步代码块><span class=hanchor arialabel=Anchor># </span>同步代码块</h2></a><p>每个 Java 对象都可以用作一个实现同步的锁，这个锁也被称为内置锁或 monitor 锁，获得 monitor 锁的唯一途径就是进入由这个锁保护的同步代码块或同步方法，线程在进入被 synchronized 保护的代码块之前，会自动获取锁，并且无论是正常路径退出，还是通过抛出异常退出，在退出的时候都会自动释放锁。</p><p>举个例子，当使用 synchronized 关键字修饰代码块的时候：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>SynTest</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>synBlock</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;abc&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>生成的字节码经过反汇编后如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>synBlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>descriptor</span><span class=o>:</span> <span class=o>()</span><span class=n>V</span>
+</span></span><span class=line><span class=cl>    <span class=n>flags</span><span class=o>:</span> <span class=n>ACC_PUBLIC</span>
+</span></span><span class=line><span class=cl>    <span class=n>Code</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>stack</span><span class=o>=</span><span class=n>2</span><span class=o>,</span> <span class=n>locals</span><span class=o>=</span><span class=n>3</span><span class=o>,</span> <span class=n>args_size</span><span class=o>=</span><span class=n>1</span>
+</span></span><span class=line><span class=cl>         <span class=n>0</span><span class=o>:</span> <span class=n>aload_0</span>
+</span></span><span class=line><span class=cl>         <span class=n>1</span><span class=o>:</span> <span class=n>dup</span>
+</span></span><span class=line><span class=cl>         <span class=n>2</span><span class=o>:</span> <span class=n>astore_1</span>
+</span></span><span class=line><span class=cl>         <span class=n>3</span><span class=o>:</span> <span class=n>monitorenter</span>
+</span></span><span class=line><span class=cl>         <span class=n>4</span><span class=o>:</span> <span class=n>getstatic</span>     <span class=err>#</span><span class=n>2</span>                  <span class=c1>// Field java/lang/System.out:Ljava/io/PrintStream;
+</span></span></span><span class=line><span class=cl><span class=c1></span>         <span class=n>7</span><span class=o>:</span> <span class=n>ldc</span>           <span class=err>#</span><span class=n>3</span>                      <span class=c1>// String abc
+</span></span></span><span class=line><span class=cl><span class=c1></span>         <span class=n>9</span><span class=o>:</span> <span class=n>invokevirtual</span> <span class=err>#</span><span class=n>4</span>               <span class=c1>// Method java/io/PrintStream.println:(Ljava/lang/String;)V
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>12</span><span class=o>:</span> <span class=n>aload_1</span>
+</span></span><span class=line><span class=cl>        <span class=n>13</span><span class=o>:</span> <span class=n>monitorexit</span>
+</span></span><span class=line><span class=cl>        <span class=n>14</span><span class=o>:</span> <span class=k>goto</span>          <span class=n>22</span>
+</span></span><span class=line><span class=cl>        <span class=n>17</span><span class=o>:</span> <span class=n>astore_2</span>
+</span></span><span class=line><span class=cl>        <span class=n>18</span><span class=o>:</span> <span class=n>aload_1</span>
+</span></span><span class=line><span class=cl>        <span class=n>19</span><span class=o>:</span> <span class=n>monitorexit</span>
+</span></span><span class=line><span class=cl>        <span class=n>20</span><span class=o>:</span> <span class=n>aload_2</span>
+</span></span><span class=line><span class=cl>        <span class=n>21</span><span class=o>:</span> <span class=n>athrow</span>
+</span></span><span class=line><span class=cl>        <span class=n>22</span><span class=o>:</span> <span class=k>return</span>
+</span></span></code></pre></td></tr></table></div></div><p>从里面可以看出，synchronized 代码块上多了 monitorenter 和 monitorexit 指令（第 3、13、19 行）。这里有一个 monitorenter，却有两个 monitorexit 指令的原因是，JVM 要保证每个 monitorenter 必须有与之对应的 monitorexit，monitorenter 指令被插入到同步代码块的开始位置，而 monitorexit 需要插入到方法正常结束处和异常处两个地方，这样就可以保证抛异常的情况下也能释放锁。</p><p>可以把执行 monitorenter 理解为加锁，执行 monitorexit 理解为释放锁，每个对象维护着一个记录着被锁次数的计数器。未被锁定的对象的该计数器为 0，具体的含义如下：</p><p><strong>monitorenter</strong></p><p>执行 monitorenter 的线程尝试获得 monitor 的所有权，会发生以下这三种情况之一：</p><ol><li>如果该 monitor 的计数为 0，则线程获得该 monitor 并将其计数设置为 1。然后，该线程就是这个 monitor 的所有者。</li><li>如果线程已经拥有了这个 monitor ，则它将重新进入，并且累加计数。</li><li>如果其他线程已经拥有了这个 monitor，那个这个线程就会被阻塞，直到这个 monitor 的计数变成为 0，代表这个 monitor 已经被释放了，于是当前这个线程就会再次尝试获取这个 monitor。</li></ol><p><strong>monitorexit</strong></p><p>monitorexit 的作用是将 monitor 的计数器减 1，直到减为 0 为止。代表这个 monitor 已经被释放了，已经没有任何线程拥有它了，也就代表着解锁，所以，其他正在等待这个 monitor 的线程，此时便可以再次尝试获取这个 monitor 的所有权。</p><a href=#同步方法><h2 id=同步方法><span class=hanchor arialabel=Anchor># </span>同步方法</h2></a><p>从上面可以看出，同步代码块是使用 monitorenter 和 monitorexit 指令实现的。而对于 synchronized 方法，它的实现不太相同。</p><p>同步方法使用示例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>synchronized</span> <span class=kt>void</span> <span class=nf>synMethod</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>对应的汇编指令如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>synchronized</span> <span class=kt>void</span> <span class=nf>synMethod</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>descriptor</span><span class=o>:</span> <span class=o>()</span><span class=n>V</span>
+</span></span><span class=line><span class=cl>    <span class=n>flags</span><span class=o>:</span> <span class=n>ACC_PUBLIC</span><span class=o>,</span> <span class=n>ACC_SYNCHRONIZED</span>
+</span></span><span class=line><span class=cl>    <span class=n>Code</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>stack</span><span class=o>=</span><span class=n>0</span><span class=o>,</span> <span class=n>locals</span><span class=o>=</span><span class=n>1</span><span class=o>,</span> <span class=n>args_size</span><span class=o>=</span><span class=n>1</span>
+</span></span><span class=line><span class=cl>         <span class=n>0</span><span class=o>:</span> <span class=k>return</span>
+</span></span><span class=line><span class=cl>      <span class=n>LineNumberTable</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>line</span> <span class=n>16</span><span class=o>:</span> <span class=n>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>对比前面使用 synchronized 代码块生成的汇编指令，可以看出，被 synchronized 修饰的方法会有一个 ACC_SYNCHRONIZED 标志。当某个线程要访问某个方法的时候，会首先检查方法是否有 ACC_SYNCHRONIZED 标志，如果有则需要先获得 monitor 锁，然后才能开始执行方法，方法执行之后再释放 monitor 锁。其他方面， synchronized 方法和刚才的 synchronized 代码块是很类似的，例如这时如果其他线程来请求执行方法，也会因为无法获得 monitor 锁而被阻塞。</p><a href=#lock-类><h1 id=lock-类><span class=hanchor arialabel=Anchor># </span>Lock 类</h1></a><a href=#简介><h2 id=简介><span class=hanchor arialabel=Anchor># </span>简介</h2></a><p>Lock 接口是 Java 5 引入的，最常见的实现类是 ReentrantLock，可以起到“锁”的作用。</p><p>通常情况下，Lock 只允许一个线程来访问这个共享资源。不过有的时候，一些特殊的实现也可允许并发访问，比如 ReadWriteLock 里面的 ReadLock。</p><a href=#方法纵览><h2 id=方法纵览><span class=hanchor arialabel=Anchor># </span>方法纵览</h2></a><p>Lock 接口的各个方法，如代码所示。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>interface</span> <span class=nc>Lock</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>lockInterruptibly</span><span class=o>()</span> <span class=kd>throws</span> <span class=n>InterruptedException</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=kt>boolean</span> <span class=nf>tryLock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=kt>boolean</span> <span class=nf>tryLock</span><span class=o>(</span><span class=kt>long</span> <span class=n>time</span><span class=o>,</span> <span class=n>TimeUnit</span> <span class=n>unit</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>InterruptedException</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>Condition</span> <span class=nf>newCondition</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#lock><h4 id=lock><span class=hanchor arialabel=Anchor># </span>lock()</h4></a><p>首先，lock() 是最基础的获取锁的方法。在线程获取锁时如果锁已被其他线程获取，则进行等待，是最初级的获取锁的方法。</p><p>对于 Lock 接口而言，获取锁和释放锁都是显式的，不像 synchronized 那样是隐式的，所以 Lock 不会像 synchronized 一样在异常时自动释放锁（synchronized 即使不写对应的代码也可以释放），lock 的加锁和释放锁都必须以代码的形式写出来，所以使用 lock() 时必须由我们自己主动去释放锁，因此最佳实践是执行 lock() 后，首先在 try{} 中操作同步资源，如果有必要就用 catch{} 块捕获异常，然后在 finally{} 中释放锁，以保证发生异常时锁一定被释放，示例代码如下所示。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Lock</span> <span class=n>lock</span> <span class=o>=</span> <span class=o>...;</span>
+</span></span><span class=line><span class=cl><span class=n>lock</span><span class=o>.</span><span class=na>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl><span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//获取到了被本锁保护的资源，处理任务
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>//捕获异常
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>lock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>   <span class=c1>//释放锁
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>一定不要忘记在 finally 中添加 unlock() 方法，以便保障锁的绝对释放。</p><p>如果不遵守在 finally 里释放锁的规范，就会让 Lock 变得非常危险，因为你不知道未来什么时候由于异常的发生，导致跳过了 unlock() 语句，使得这个锁永远不能被释放了，其他线程也无法再获得这个锁。</p><p>与此同时，lock() 方法不能被中断，这会带来很大的隐患：一旦陷入死锁，lock() 就会陷入永久等待，所以一般我们用 tryLock() 等其他更高级的方法来代替 lock()，下面我们就看一看 tryLock() 方法。</p><a href=#trylock><h4 id=trylock><span class=hanchor arialabel=Anchor># </span>tryLock()</h4></a><p>tryLock() 用来尝试获取锁，如果当前锁没有被其他线程占用，则获取成功，返回 true，否则返回 false，代表获取锁失败。相比于 lock()，这样的方法显然功能更强大，我们可以根据是否能获取到锁来决定后续程序的行为。</p><p>因为该方法会立即返回，即便在拿不到锁时也不会一直等待，所以通常情况下，我们用 if 语句判断 tryLock() 的返回结果，根据是否获取到锁来执行不同的业务逻辑，典型使用方法如下。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=n>Lock</span> <span class=n>lock</span> <span class=o>=</span> <span class=o>...;</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>(</span><span class=n>lock</span><span class=o>.</span><span class=na>tryLock</span><span class=o>())</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>     <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>         <span class=c1>//处理任务
+</span></span></span><span class=line><span class=cl><span class=c1></span>     <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>         <span class=n>lock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>   <span class=c1>//释放锁
+</span></span></span><span class=line><span class=cl><span class=c1></span>     <span class=o>}</span> 
+</span></span><span class=line><span class=cl><span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>//如果不能获取锁，则做其他事情
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>如果 if 语句返回 false 就会进入 else 语句，代表它暂时不能获取到锁，可以先去做一些其他事情，比如等待几秒钟后重试，或者跳过这个任务，有了这个强大的 tryLock() 方法我们便可以解决死锁问题。</p><a href=#trylocklong-time-timeunit-unit><h4 id=trylocklong-time-timeunit-unit><span class=hanchor arialabel=Anchor># </span>tryLock(long time, TimeUnit unit)</h4></a><p>tryLock() 的重载方法是 tryLock(long time, TimeUnit unit)，这个方法和 tryLock() 很类似，区别在于 tryLock(long time, TimeUnit unit) 方法会有一个超时时间，在拿不到锁时会等待一定的时间，如果在时间期限结束后，还获取不到锁，就会返回 false；如果一开始就获取锁或者等待期间内获取到锁，则返回 true。</p><p>这个方法解决了 lock() 方法容易发生死锁的问题，使用 tryLock(long time, TimeUnit unit) 时，在等待了一段指定的超时时间后，线程会主动放弃这把锁的获取，避免永久等待；在等待的期间，也可以随时中断线程，这就避免了死锁的发生。</p><a href=#lockinterruptibly><h4 id=lockinterruptibly><span class=hanchor arialabel=Anchor># </span>lockInterruptibly()</h4></a><p>这个方法的作用也是去获取锁，如果这个锁当前是可以获得的，那么这个方法会立刻返回，但是如果这个锁当前是不能获得的（被其他线程持有），那么当前线程便会开始等待，除非它等到了这把锁或者是在等待的过程中被中断了，否则这个线程便会一直在这里执行这行代码。一句话总结就是，除非当前线程在获取锁期间被中断，否则便会一直尝试获取直到获取到为止。</p><p>顾名思义，lockInterruptibly() 是可以响应中断的。相比于不能响应中断的 synchronized 锁，lockInterruptibly() 可以让程序更灵活，可以在获取锁的同时，保持对中断的响应。我们可以把这个方法理解为超时时间是无穷长的 tryLock(long time, TimeUnit unit)，因为 tryLock(long time, TimeUnit unit) 和 lockInterruptibly() 都能响应中断，只不过 lockInterruptibly() 永远不会超时。</p><p>这个方法本身是会抛出 InterruptedException 的，所以使用的时候，如果不在方法签名声明抛出该异常，那么就要写两个 try 块，如下所示。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kt>void</span> <span class=nf>lockInterruptibly</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>lock</span><span class=o>.</span><span class=na>lockInterruptibly</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;操作资源&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>lock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>InterruptedException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>在这个方法中我们首先执行了 lockInterruptibly() 方法，并且对它进行了 try catch 包装，然后同样假设我们能够获取到这把锁，和之前一样，就必须要使用 try finall 来保障锁的绝对释放。</p><a href=#unlock><h4 id=unlock><span class=hanchor arialabel=Anchor># </span>unlock()</h4></a><p>最后要介绍的方法是 unlock() 方法，是用于解锁的，此方法比较简单，对于 ReentrantLock 而言，执行 unlock() 的时候，内部会把锁的“被持有计数器”减 1，直到减到 0 就代表当前这把锁已经完全释放了，如果减 1 后计数器不为 0，说明这把锁之前被“重入”了，那么锁并没有真正释放，仅仅是减少了持有的次数。</p><a href=#newcondition><h4 id=newcondition><span class=hanchor arialabel=Anchor># </span>newCondition()</h4></a><p>Condition 接口也提供了类似 Object 的监视器方法，与 Lock 配合可以实现等待/通知模式。</p><p>假设线程 1 需要等待某些条件满足后，才能继续运行，这个条件会根据业务场景不同，有不同的可能性，比如等待某个时间点到达或者等待某些任务处理完毕。在这种情况下，可以执行 Condition 的 await 方法，一旦执行了该方法，这个线程就会进入 WAITING 状态。</p><p>通常会有另外一个线程，我们把它称作线程 2，它去达成对应的条件，直到这个条件达成之后，那么，线程 2 调用 Condition 的 signal 方法 [或 signalAll 方法]，代表“这个条件已经达成了，之前等待这个条件的线程现在可以苏醒了”。这个时候，JVM 就会找到等待该 Condition 的线程，并予以唤醒，根据调用的是 signal 方法或 signalAll 方法，会唤醒 1 个或所有的线程。于是，线程 1 在此时就会被唤醒，然后它的线程状态又会回到 Runnable 可执行状态。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>ConditionDemo</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>ReentrantLock</span> <span class=n>lock</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ReentrantLock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>Condition</span> <span class=n>condition</span> <span class=o>=</span> <span class=n>lock</span><span class=o>.</span><span class=na>newCondition</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>method1</span><span class=o>()</span> <span class=kd>throws</span> <span class=n>InterruptedException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>lock</span><span class=o>.</span><span class=na>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()+</span><span class=s>&#34;:条件不满足，开始await&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>condition</span><span class=o>.</span><span class=na>await</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()+</span><span class=s>&#34;:条件满足了，开始执行后续的任务&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>lock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>method2</span><span class=o>()</span> <span class=kd>throws</span> <span class=n>InterruptedException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>lock</span><span class=o>.</span><span class=na>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()+</span><span class=s>&#34;:需要5秒钟的准备时间&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>Thread</span><span class=o>.</span><span class=na>sleep</span><span class=o>(</span><span class=n>5000</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()+</span><span class=s>&#34;:准备工作完成，唤醒其他的线程&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>condition</span><span class=o>.</span><span class=na>signal</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>lock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=kd>throws</span> <span class=n>InterruptedException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>ConditionDemo</span> <span class=n>conditionDemo</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ConditionDemo</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>Thread</span><span class=o>(</span><span class=k>new</span> <span class=n>Runnable</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=nd>@Override</span>
+</span></span><span class=line><span class=cl>            <span class=kd>public</span> <span class=kt>void</span> <span class=nf>run</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>conditionDemo</span><span class=o>.</span><span class=na>method2</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>InterruptedException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>conditionDemo</span><span class=o>.</span><span class=na>method1</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=nl>main:</span><span class=n>条件不满足</span><span class=err>，</span><span class=n>开始</span> <span class=n>await</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>0</span><span class=o>:</span><span class=n>需要</span> <span class=n>5</span> <span class=n>秒钟的准备时间</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>0</span><span class=o>:</span><span class=n>准备工作完成</span><span class=err>，</span><span class=n>唤醒其他的线程</span>
+</span></span><span class=line><span class=cl><span class=nl>main:</span><span class=n>条件满足了</span><span class=err>，</span><span class=n>开始执行后续的任务</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li><strong>method1</strong>，它代表主线程将要执行的内容，首先获取到锁，打印出“条件不满足，开始 await”，然后调用 condition.await() 方法，直到条件满足之后，则代表这个语句可以继续向下执行了，于是打印出“条件满足了，开始执行后续的任务”，最后会在 finally 中解锁。</li><li><strong>method2</strong>，它同样也需要先获得锁，然后打印出“需要 5 秒钟的准备时间”，接着用 sleep 来模拟准备时间；在时间到了之后，则打印出“准备工作完成”，最后调用 condition.signal() 方法，把之前已经等待的线程唤醒。</li></ul><a href=#读写锁><h1 id=读写锁><span class=hanchor arialabel=Anchor># </span>读写锁</h1></a><p>在没有读写锁之前，假设使用普通的 ReentrantLock，那么虽然保证了线程安全，但是也浪费了一定的资源，因为如果多个读操作同时进行，其实并没有线程安全问题，可以允许让多个读操作并行，以便提高程序效率。</p><p>但是写操作不是线程安全的，如果多个线程同时写，或者在写的同时进行读操作，便会造成线程安全问题。</p><p>读写锁就解决了这样的问题，它设定了一套规则，既可以保证多个线程同时读的效率，同时又可以保证有写入操作时的线程安全。</p><p><strong>使用读写锁时遵守下面的获取规则</strong></p><ul><li>如果有一个线程已经占用了读锁，则此时其他线程如果要申请读锁，可以申请成功。</li><li>如果有一个线程已经占用了读锁，则此时其他线程如果要申请写锁，则申请写锁的线程会一直等待释放读锁，因为读写不能同时操作。</li><li>如果有一个线程已经占用了写锁，则此时其他线程如果申请写锁或者读锁，都必须等待之前的线程释放写锁，同样也因为读写不能同时，并且两个线程不应该同时写。</li></ul><p>用一句话总结：要么是一个或多个线程同时有读锁，要么是一个线程有写锁，但是两者不会同时出现。也可以总结为：读读共享、其他都互斥（写写互斥、读写互斥、写读互斥）。</p><a href=#strong使用示例strong><h4 id=strong使用示例strong><span class=hanchor arialabel=Anchor># </span><strong>使用示例</strong></h4></a><p>ReentrantReadWriteLock 是 ReadWriteLock 的实现类，最主要的有两个方法：readLock() 和 writeLock() 用来获取读锁和写锁。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>ReadWriteLockDemo</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=n>ReentrantReadWriteLock</span> <span class=n>reentrantReadWriteLock</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ReentrantReadWriteLock</span><span class=o>(</span><span class=kc>false</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=n>ReentrantReadWriteLock</span><span class=o>.</span><span class=na>ReadLock</span> <span class=n>readLock</span> <span class=o>=</span> <span class=n>reentrantReadWriteLock</span><span class=o>.</span><span class=na>readLock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=n>ReentrantReadWriteLock</span><span class=o>.</span><span class=na>WriteLock</span> <span class=n>writeLock</span> <span class=o>=</span> <span class=n>reentrantReadWriteLock</span><span class=o>.</span><span class=na>writeLock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>read</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>readLock</span><span class=o>.</span><span class=na>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;得到读锁，正在读取&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>Thread</span><span class=o>.</span><span class=na>sleep</span><span class=o>(</span><span class=n>500</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>InterruptedException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;释放读锁&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>readLock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>write</span><span class=o>()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>writeLock</span><span class=o>.</span><span class=na>lock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>try</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;得到写锁，正在写入&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>Thread</span><span class=o>.</span><span class=na>sleep</span><span class=o>(</span><span class=n>500</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>InterruptedException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span> <span class=k>finally</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;释放写锁&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=n>writeLock</span><span class=o>.</span><span class=na>unlock</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> 
+</span></span><span class=line><span class=cl>            <span class=kd>throws</span> <span class=n>InterruptedException</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>Thread</span><span class=o>(()</span> <span class=o>-&gt;</span> <span class=n>read</span><span class=o>()).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>Thread</span><span class=o>(()</span> <span class=o>-&gt;</span> <span class=n>read</span><span class=o>()).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>Thread</span><span class=o>(()</span> <span class=o>-&gt;</span> <span class=n>write</span><span class=o>()).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=k>new</span> <span class=n>Thread</span><span class=o>(()</span> <span class=o>-&gt;</span> <span class=n>write</span><span class=o>()).</span><span class=na>start</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>输出结果</span><span class=err>：</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>0得到读锁</span><span class=err>，</span><span class=n>正在读取</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>1得到读锁</span><span class=err>，</span><span class=n>正在读取</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>0释放读锁</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>1释放读锁</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>2得到写锁</span><span class=err>，</span><span class=n>正在写入</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>2释放写锁</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>3得到写锁</span><span class=err>，</span><span class=n>正在写入</span>
+</span></span><span class=line><span class=cl><span class=n>Thread</span><span class=o>-</span><span class=n>3释放写锁</span>
+</span></span></code></pre></td></tr></table></div></div><p>可以看出，读锁可以同时被多个线程获得，而写锁不能。</p><a href=#适用场景-1><h4 id=适用场景-1><span class=hanchor arialabel=Anchor># </span>适用场景</h4></a><p>相比于 ReentrantLock 适用于一般场合，ReadWriteLock 适用于读多写少的情况，合理使用可以进一步提高并发效率。</p><a href=#jvm-对锁的优化><h1 id=jvm-对锁的优化><span class=hanchor arialabel=Anchor># </span>JVM 对锁的优化</h1></a><p>相比于 JDK 1.5，在 JDK 1.6 中 HotSopt 虚拟机对 synchronized 内置锁的性能进行了很多优化，包括自适应的自旋、锁消除、锁粗化、偏向锁、轻量级锁等。有了这些优化措施后，synchronized 锁的性能得到了大幅提高，下面我们分别介绍这些具体的优化。</p><a href=#自适应的自旋锁><h4 id=自适应的自旋锁><span class=hanchor arialabel=Anchor># </span>自适应的自旋锁</h4></a><p>在 JDK 1.6 中引入了自适应的自旋锁来解决长时间自旋的问题。自适应意味着自旋的时间不再固定，而是会根据最近自旋尝试的成功率、失败率，以及当前锁的拥有者的状态等多种因素来共同决定。自旋的持续时间是变化的，自旋锁变“聪明”了。比如，如果最近尝试自旋获取某一把锁成功了，那么下一次可能还会继续使用自旋，并且允许自旋更长的时间；但是如果最近自旋获取某一把锁失败了，那么可能会省略掉自旋的过程，以便减少无用的自旋，提高效率。</p><a href=#锁消除><h4 id=锁消除><span class=hanchor arialabel=Anchor># </span>锁消除</h4></a><p>经过逃逸分析之后，如果发现某些对象不可能被其他线程访问到，那么就可以把它们当成栈上数据，栈上数据由于只有本线程可以访问，自然是线程安全的，也就无需加锁，所以会把这样的锁给自动去除掉。</p><a href=#锁粗化><h4 id=锁粗化><span class=hanchor arialabel=Anchor># </span>锁粗化</h4></a><p>如果释放了锁，紧接着什么都没做，又重新获取锁，那么其实这种释放和重新获取锁是完全没有必要的，如果我们把同步区域扩大，也就是只在最开始加一次锁，并且在最后直接解锁，那么就可以把中间这些无意义的解锁和加锁的过程消除，相当于是把几个 synchronized 块合并为一个较大的同步块。这样做的好处在于在线程执行这些代码时，就无须频繁申请与释放锁了，这样就减少了性能开销。</p><a href=#锁升级><h4 id=锁升级><span class=hanchor arialabel=Anchor># </span>锁升级</h4></a><p>前面说到过，从无锁到偏向锁，再到轻量级锁，最后到重量级锁的升级过程也是 JVM 自动完成的。JVM 默认会优先使用偏向锁，如果有必要的话才逐步升级，这大幅提高了锁的性能。</p><p><img src=https://www.guanpj.top//static/boxcnbZvPeGi4z8k2FGxQjRyxYd.png width=auto alt></p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>Backlinks</h3><ul class=backlinks><li>No backlinks found</li></ul></div><div><script async src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>Interactive Graph</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.guanpj.top/js/graph.6579af7b10c818dbd2ca038702db0224.js></script></div></div><div id=contact_buttons><footer><p>Made by guanpj using <a href=https://github.com/jackyzha0/quartz>Quartz</a>, © 2023</p><ul><li><a href=https://www.guanpj.top/>Home</a></li><li><a href=https://twitter.com/guanpj>Twitter</a></li><li><a href=https://github.com/guanpj>GitHub</a></li></ul></footer></div></div></body></html>
