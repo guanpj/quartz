@@ -18,7 +18,7 @@ search:
   operandApiKey: "REPLACE-WITH-YOUR-OPERAND-API-KEY"
   operandIndexId: "REPLACE-WITH-YOUR-OPERAND-INDEX-ID"
 description:
-    我的第二大脑 second brain，我的数字花园 digital garden，用obsidian双链笔记软件写作而成。
+    这是我的数字花园，里面记录着我的工作和生活，用obsidian双链笔记软件写作而成。
 page_title:
   "🌻 guanpjの花园 🌵"
 links:
@@ -26,3 +26,5 @@ links:
     link: https://twitter.com/guanpj
   - link_name: GitHub
     link: https://github.com/guanpj
+favicon:
+  - { rel: "shortcut icon", href: "icon.png", type: "image/png" }
