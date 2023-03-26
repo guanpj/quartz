@@ -16,11 +16,12 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      - name: config1 
-        #run: rm -rf content/.obsidian content/cedict_ts.u8 && mv content/AboutTheGarden.md content/_index.md 
-        run: rm -rf content/.obsidian content/cedict_ts.u8 content/Extras/Templates  && mv content/*.md content/Atlas && find content/ -name "*.md" | xargs -I file  mv -f file content &&  mv content/Home.md content/_index.md 
+      - name: config1
+        # 将从 content 目录中删除某些文件和目录，然后将所有 .md 文件移回 content 目录中，最后将 Home.md 文件重命名为 _index.md 文件
+        run: rm -rf content/.obsidian content/cedict_ts.u8 content/Templates && mv content/*.md content/Atlas && find content/ -name "*.md" | xargs -I file  mv -f file content &&  mv content/Home.md content/_index.md 
 
       - name: config2
+        # 列出 content 目录下所有文件和目录，找到其中所有包含字符串 title 的文件，并将其中的 title 字段格式化为 "title" 的形式
         run: "ls content/ && grep -lr --null 'title' content/* | xargs -0 sed -i -E -r 's/title: (.*)/title: \"\\1\"/g'"
 
       - name: config3 
