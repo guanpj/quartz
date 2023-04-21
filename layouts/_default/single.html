@@ -9,11 +9,11 @@
     <div class="col-md-3" id="toc">
       {{partial "toc.html" .}}
       {{ if .IsPage }}
-      <script src="{{ "js/custom.js" | absURL }}"></script>
+      {{ $js := resources.Get "js/custom.js" | resources.Fingerprint "md5" }}
       {{ end }}
     </div>
     <div class="col-md-9">
-      <!-- Begin actual content -->
+      <!-- Beg/Users/guanpj/Documents/Tools/quartz/assets/staticin actual content -->
       {{partial "header.html" .}}
       <article>
         {{if .Title}}<h1>{{ .Title }}</h1>{{end}}

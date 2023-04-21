@@ -254,8 +254,9 @@ hr {
 
 #toc {
   position: fixed;
-  top: 150px;
+  top: 50%;
   left: 30px;
+  transform: translateY(-50%);
   padding: 10px;
   margin: 0;
   max-height: calc(100vh - 80px);
@@ -266,4 +267,11 @@ hr {
   #toc {
     display: none;
   }
+}
+
+.fixed-right {
+  position: fixed;
+  right: 80px; /* 调整这个值以控制距离右边缘的距离 */
+  top: 50%;
+  transform: translateY(-50%);
 }
