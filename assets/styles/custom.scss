@@ -238,3 +238,32 @@ hr {
     transform: translateY(-0.1em);
   }
 }
+
+/* 将目录放在文章左边 */
+.col-md-3 {
+  float: left;
+  width: 25%;
+  max-width: 300px;
+}
+
+/* 将文章主体内容放在目录右边 */
+.col-md-9 {
+  float: left;
+  width: 100%;
+}
+
+#toc {
+  position: fixed;
+  top: 150px;
+  left: 30px;
+  padding: 10px;
+  margin: 0;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  #toc {
+    display: none;
+  }
+}

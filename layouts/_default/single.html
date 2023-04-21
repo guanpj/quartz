@@ -5,30 +5,39 @@
 <body>
 {{partial "search.html" .}}
 <div class="singlePage">
-    <!-- Begin actual content -->
-    {{partial "header.html" .}}
-    <article>
-      {{if .Title}}<h1>{{ .Title }}</h1>{{end}}
-      <p class="meta">
-        {{ i18n "last_updated" }} {{ partial "date-fmt.html" .}} 
+  <div class="row">
+    <div class="col-md-3" id="toc">
+      {{partial "toc.html" .}}
+      {{ if .IsPage }}
+      <script src="{{ "js/custom.js" | absURL }}"></script>
+      {{ end }}
+    </div>
+    <div class="col-md-9">
+      <!-- Begin actual content -->
+      {{partial "header.html" .}}
+      <article>
+        {{if .Title}}<h1>{{ .Title }}</h1>{{end}}
+        <p class="meta">
+          {{ i18n "last_updated" }} {{ partial "date-fmt.html" .}} 
           {{ partial "github.html" . }}
-      </p>
-      <ul class="tags">
+        </p>
+        <ul class="tags">
           {{ range (.GetTerms "tags") }}
           <li><a href="{{ .Permalink }}">
-          {{if (eq $.Site.Language.Lang "en")}}
-            {{ .LinkTitle | humanize }}
-          {{else}}
-            {{ .LinkTitle }}
-          {{end}}
+            {{if (eq $.Site.Language.Lang "en")}}
+              {{ .LinkTitle | humanize }}
+            {{else}}
+              {{ .LinkTitle }}
+            {{end}}
             </a>
-           </li>
+          </li>
           {{ end }}
-      </ul>
-      {{partial "toc.html" .}}
-      {{partial "textprocessing.html" . }}
-    </article>
-    {{partial "footer.html" .}}
+        </ul>
+        {{partial "textprocessing.html" . }}
+      </article>
+      {{partial "footer.html" .}}
+    </div>
+  </div>
 </div>
 </body>
 </html>

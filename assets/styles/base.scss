@@ -90,6 +90,11 @@ tbody, li, p {
       cursor: zoom-out;
     }
   }
+
+  & li.active > a {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
 }
 
 #TableOfContents > ol {
