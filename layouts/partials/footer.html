@@ -1,6 +1,18 @@
 
+{{if $.Site.Data.config.enableFooter}}
+<div class="page-end" id="footer">
+    <div class="backlinks-container">
+        {{partial "backlinks.html" .}}
+    </div>
+    <div>
+        {{partial "graph.html" .}}
+    </div>
+</div>
+{{end}}
 
-<hr/>
+{{partial "contact.html" .}}
+
+<!-- <hr/>
 {{if $.Site.Data.config.enableFooter}}
 <div class="page-end" id="footer">
   <div class="fixed-right">
@@ -13,4 +25,4 @@
   </div>
 </div>
 {{end}}
-{{partial "contact.html" .}}
+{{partial "contact.html" .}} -->
